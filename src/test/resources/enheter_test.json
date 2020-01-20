@@ -1,0 +1,186 @@
+[ {
+  "organisasjonsnummer" : "899176812",
+  "navn" : "BASTIAN STOERMANN-NÆSS",
+  "organisasjonsform" : {
+    "kode" : "ENK",
+    "beskrivelse" : "Enkeltpersonforetak",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2012-11-24",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Undervisning innen idrett og rekreasjon",
+    "kode" : "85.510"
+  },
+  "antallAnsatte" : 0,
+  "forretningsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "0584",
+    "poststed" : "OSLO",
+    "adresse" : [ "Krokliveien 55" ],
+    "kommune" : "OSLO",
+    "kommunenummer" : "0301"
+  },
+  "institusjonellSektorkode" : {
+    "kode" : "8200",
+    "beskrivelse" : "Personlig næringsdrivende"
+  },
+  "registrertIForetaksregisteret" : false,
+  "registrertIStiftelsesregisteret" : false,
+  "registrertIFrivillighetsregisteret" : false,
+  "konkurs" : false,
+  "underAvvikling" : false,
+  "underTvangsavviklingEllerTvangsopplosning" : false,
+  "maalform" : "Bokmål",
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "899177312",
+  "navn" : "LEBESBY BYGDELAG",
+  "organisasjonsform" : {
+    "kode" : "FLI",
+    "beskrivelse" : "Forening/lag/innretning",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2012-11-24",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Aktiviteter i andre interesseorganisasjoner ikke nevnt annet sted",
+    "kode" : "94.991"
+  },
+  "antallAnsatte" : 0,
+  "forretningsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "9740",
+    "poststed" : "LEBESBY",
+    "adresse" : [ ],
+    "kommune" : "LEBESBY",
+    "kommunenummer" : "2022"
+  },
+  "stiftelsesdato" : "2012-05-03",
+  "institusjonellSektorkode" : {
+    "kode" : "7000",
+    "beskrivelse" : "Ideelle organisasjoner"
+  },
+  "registrertIForetaksregisteret" : false,
+  "registrertIStiftelsesregisteret" : false,
+  "registrertIFrivillighetsregisteret" : true,
+  "konkurs" : false,
+  "underAvvikling" : false,
+  "underTvangsavviklingEllerTvangsopplosning" : false,
+  "maalform" : "Bokmål",
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "899177622",
+  "navn" : "ADVOKAT ASTRID VIGDIS HARAM",
+  "organisasjonsform" : {
+    "kode" : "ENK",
+    "beskrivelse" : "Enkeltpersonforetak",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2012-11-24",
+  "registrertIMvaregisteret" : true,
+  "naeringskode1" : {
+    "beskrivelse" : "Juridisk tjenesteyting",
+    "kode" : "69.100"
+  },
+  "antallAnsatte" : 0,
+  "forretningsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "0159",
+    "poststed" : "OSLO",
+    "adresse" : [ "Grensen 12B" ],
+    "kommune" : "OSLO",
+    "kommunenummer" : "0301"
+  },
+  "institusjonellSektorkode" : {
+    "kode" : "8200",
+    "beskrivelse" : "Personlig næringsdrivende"
+  },
+  "registrertIForetaksregisteret" : false,
+  "registrertIStiftelsesregisteret" : false,
+  "registrertIFrivillighetsregisteret" : false,
+  "sisteInnsendteAarsregnskap" : "2018",
+  "konkurs" : false,
+  "underAvvikling" : false,
+  "underTvangsavviklingEllerTvangsopplosning" : false,
+  "maalform" : "Bokmål",
+  "links" : [ ]
+}, {
+  "navn" : "PROFINOVA AS",
+  "organisasjonsform" : {
+    "kode" : "AS",
+    "beskrivelse" : "Aksjeselskap",
+    "links" : [ ]
+  },
+  "hjemmeside" : "www.profinova.no",
+  "registreringsdatoEnhetsregisteret" : "2012-11-24",
+  "registrertIMvaregisteret" : true,
+  "naeringskode1" : {
+    "beskrivelse" : "Byggeteknisk konsulentvirksomhet",
+    "kode" : "71.121"
+  },
+  "organisasjonsnummer" : "899177932",
+  "antallAnsatte" : 1,
+  "forretningsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "4016",
+    "poststed" : "STAVANGER",
+    "adresse" : [ "Øvre Sandvikveien 25" ],
+    "kommune" : "STAVANGER",
+    "kommunenummer" : "1103"
+  },
+  "stiftelsesdato" : "2012-11-01",
+  "institusjonellSektorkode" : {
+    "kode" : "2100",
+    "beskrivelse" : "Private aksjeselskaper mv."
+  },
+  "registrertIForetaksregisteret" : true,
+  "registrertIStiftelsesregisteret" : false,
+  "registrertIFrivillighetsregisteret" : false,
+  "sisteInnsendteAarsregnskap" : "2018",
+  "konkurs" : false,
+  "underAvvikling" : false,
+  "underTvangsavviklingEllerTvangsopplosning" : false,
+  "maalform" : "Bokmål",
+  "links" : [ ]
+}, {
+  "navn" : "AARON WEGGERSEN",
+  "organisasjonsform" : {
+    "kode" : "ENK",
+    "beskrivelse" : "Enkeltpersonforetak",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2012-12-10",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Konsulentvirksomhet tilknyttet informasjonsteknologi",
+    "kode" : "62.020"
+  },
+  "antallAnsatte" : 0,
+  "forretningsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "3055",
+    "poststed" : "KROKSTADELVA",
+    "adresse" : [ "Bakkeveien 6A" ],
+    "kommune" : "NEDRE EIKER",
+    "kommunenummer" : "0625"
+  },
+  "institusjonellSektorkode" : {
+    "kode" : "8200",
+    "beskrivelse" : "Personlig næringsdrivende"
+  },
+  "registrertIForetaksregisteret" : false,
+  "registrertIStiftelsesregisteret" : false,
+  "registrertIFrivillighetsregisteret" : false,
+  "konkurs" : false,
+  "underAvvikling" : false,
+  "underTvangsavviklingEllerTvangsopplosning" : false,
+  "maalform" : "Bokmål",
+  "links" : [ ],
+  "organisasjonsnummer" : "899178602"
+} ]

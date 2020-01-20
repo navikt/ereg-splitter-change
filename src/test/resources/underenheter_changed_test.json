@@ -1,0 +1,138 @@
+[ {
+  "organisasjonsnummer" : "981452607",
+  "navn" : "TYSNES LAKK & SERVICESENTER AS",
+  "organisasjonsform" : {
+    "kode" : "BEDR",
+    "beskrivelse" : "Bedrift",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2000-01-13",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Detaljhandel med drivstoff til motorvogner",
+    "kode" : "47.300"
+  },
+  "antallAnsatte" : 4,
+  "overordnetEnhet" : "981442075",
+  "oppstartsdato" : "2000-02-01",
+  "beliggenhetsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "5680",
+    "poststed" : "TYSNES",
+    "adresse" : [ ],
+    "kommune" : "TYSNES",
+    "kommunenummer" : "1223"
+  },
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "981452984",
+  "navn" : "PENNY INVEST AS",
+  "organisasjonsform" : {
+    "kode" : "BEDR",
+    "beskrivelse" : "Bedrift",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2000-01-13",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Utleie av egen eller leid fast eiendom ellers",
+    "kode" : "68.209"
+  },
+  "antallAnsatte" : 3,
+  "overordnetEnhet" : "981090799",
+  "oppstartsdato" : "1999-09-10",
+  "beliggenhetsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "4056",
+    "poststed" : "TANANGER",
+    "adresse" : [ "Risavika Havnering 149" ],
+    "kommune" : "SOLA",
+    "kommunenummer" : "1124"
+  },
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "981452992",
+  "navn" : "HAV BULK AS",
+  "organisasjonsform" : {
+    "kode" : "BEDR",
+    "beskrivelse" : "Bedrift",
+    "links" : [ ]
+  },
+  "hjemmeside" : "www.hav.no",
+  "registreringsdatoEnhetsregisteret" : "2000-01-13",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Utenriks sjøfart med gods",
+    "kode" : "50.201"
+  },
+  "antallAnsatte" : 0,
+  "overordnetEnhet" : "981100190",
+  "oppstartsdato" : "1999-09-07",
+  "beliggenhetsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "0250",
+    "poststed" : "OSLO",
+    "adresse" : [ "Filipstadveien 5" ],
+    "kommune" : "OSLO",
+    "kommunenummer" : "0301"
+  },
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "981453166",
+  "navn" : "JUNO AS",
+  "organisasjonsform" : {
+    "kode" : "BEDR",
+    "beskrivelse" : "Bedrift",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2000-01-13",
+  "registrertIMvaregisteret" : false,
+  "naeringskode1" : {
+    "beskrivelse" : "Utøvende kunstnere og underholdningsvirksomhet innen musikk",
+    "kode" : "90.011"
+  },
+  "antallAnsatte" : 1,
+  "overordnetEnhet" : "999082645",
+  "oppstartsdato" : "1999-01-01",
+  "datoEierskifte" : "2012-10-15",
+  "beliggenhetsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "1359",
+    "poststed" : "EIKSMARKA",
+    "adresse" : [ "Konglefaret 31A" ],
+    "kommune" : "BÆRUM",
+    "kommunenummer" : "0219"
+  },
+  "links" : [ ]
+}, {
+  "organisasjonsnummer" : "981453190",
+  "navn" : "TONE BESSERUD",
+  "organisasjonsform" : {
+    "kode" : "BEDR",
+    "beskrivelse" : "Bedrift",
+    "links" : [ ]
+  },
+  "registreringsdatoEnhetsregisteret" : "2000-01-13",
+  "registrertIMvaregisteret" : true,
+  "naeringskode1" : {
+    "beskrivelse" : "Kombinert husdyrhold og planteproduksjon",
+    "kode" : "01.500"
+  },
+  "antallAnsatte" : 0,
+  "overordnetEnhet" : "981439325",
+  "oppstartsdato" : "2000-01-01",
+  "beliggenhetsadresse" : {
+    "land" : "Norge",
+    "landkode" : "NO",
+    "postnummer" : "3359",
+    "poststed" : "EGGEDAL",
+    "adresse" : [ "Besserudveien 55" ],
+    "kommune" : "SIGDAL",
+    "kommunenummer" : "0621"
+  },
+  "links" : [ ]
+} ]
