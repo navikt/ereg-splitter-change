@@ -21,10 +21,22 @@ plugins {
     id 'com.google.protobuf' version '0.8.11'
     id 'org.jmailen.kotlinter' version '2.2.0'
     id 'com.github.ben-manes.versions' version '0.27.0'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
 group 'no.nav.ereg'
-version '1.0-SNAPSHOT'
+version '0.6'
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'no.nav.ereg.MainKt'
+    }
+}
+
+shadowJar {
+    archiveBaseName = 'app'
+    archiveClassifier = ''
+}
 
 application {
     mainClassName = 'no.nav.ereg.MainKt'

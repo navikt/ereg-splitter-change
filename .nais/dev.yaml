@@ -1,10 +1,10 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: argus-sykmeldinger
+  name: ereg-splitter-change
   namespace: default
   labels:
-    team: dsopkontroll
+    team: teamcrm
 spec:
   image: {{ image }}
   port: 8080
@@ -12,48 +12,57 @@ spec:
     min: 1
     max: 1
   liveness:
-    path: /internal/is_alive
+    path: /isAlive
     initialDelay: 5
     periodSeconds: 5
     failureThreshold: 30
   readiness:
-    path: /internal/is_ready
+    path: /isReady
     initialDelay: 5
     periodSeconds: 5
     failureThreshold: 30
   prometheus:
     enabled: true
-    path: /internal/prometheus
+    path: /metrics
   resources:
     limits:
       cpu: 1000m
-      memory: 2Gi
+      memory: 4Gi
     requests:
       cpu: 100m
-      memory: 768Mi
-  webproxy: true
-  ingresses: ["https://argus-sykmeldinger.nais.preprod.local"]
+      memory: 2Gi
   vault:
     enabled: true
     paths:
       - mountPath: /var/run/secrets/nais.io/vault
-        kvPath: /kv/preprod/fss/argus-sykmeldinger/default
+        kvPath: /kv/preprod/sbs/ereg-splitter-change/default
       - mountPath: /var/run/secrets/nais.io/serviceuser
-        kvPath: /serviceuser/data/dev/srvargussm
+        kvPath: /serviceuser/data/dev/srveregsplchg
   env:
-    - name: JWT_ENABLED
-      value: "true"
-    - name: KAFKA_BOOTSTRAP_SERVERS
+    - name: KAFKA_BROKERS
       value: b27apvl00045.preprod.local:8443,b27apvl00046.preprod.local:8443,b27apvl00047.preprod.local:8443
-    - name: DATABASE_HOST
-      value: b27dbvl008.preprod.local
-    - name: DATABASE_PORT
-      value: "5432"
-    - name: DATABASE_NAME
-      value: argus-sykmeldinger
-    - name: DATABASE_VAULT_MOUNTPATH
-      value: postgresql/preprod-fss
-    - name: JWT_ISSUER
-      value: https://sts.windows.net/966ac572-f5b7-4bbe-aa88-c76419c0f851/
-    - name: JWT_JWKS_URI
-      value: https://login.windows.net/common/discovery/keys
+    - name: KAFKA_CLIENTID
+      value: ereg-splitter-change
+    - name: KAFKA_SECURITY
+      value: TRUE
+    - name: KAFKA_SECPROT
+      value: SASL_PLAINTEXT
+    - name: KAFKA_SASLMEC
+      value: PLAIN
+    - name: KAFKA_TOPIC
+      value: public-ereg-cache-org-json
+    - name: EREG_UEURL
+      value: https://data.brreg.no/enhetsregisteret/api/underenheter/lastned
+    - name: EREG_UEACCEPT
+      value: application/vnd.brreg.enhetsregisteret.underenhet.v1+gzip;charset=UTF-8
+    - name:  EREG_OEURL
+      value: https://data.brreg.no/enhetsregisteret/api/enheter/lastned
+    - name: EREG_OEACCEPT
+      value: application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8
+    - name: RUN_EACH_MORNING
+      value: TRUE
+    - name: MAX_ATTEMPTS
+      value: 24
+    - name: MS_BETWEEN_RETRIES
+      value: 1800000
+
