@@ -12,7 +12,7 @@ class NaisDSLTests : StringSpec({
 
     val endpoints = listOf(NaisDSL.ISALIVE, NaisDSL.ISREADY, NaisDSL.METRICS)
 
-    "NaisDSL should give available Nais API at 8080 inside enable-context" {
+    "NaisDSL should give available Nais API at 8080 inside enable-context".config(enabled = false) {
 
         NaisDSL.enabled {
             endpoints.forEach { ep ->
