@@ -12,12 +12,12 @@ fun main() {
     EnvVarFactory.envVar.let { ev ->
 
         if (!ev.eregDetailsComplete()) {
-            log.error { "EREG details are incomplete - $ev" }
+            log.error { "EREG details are incomplete - " }
             return
         }
 
         if (ev.kafkaSecurityEnabled() && !ev.kafkaSecurityComplete()) {
-            log.error { "Kafka security enabled, but incomplete kafka security properties - $ev" }
+            log.error { "Kafka security enabled, but incomplete kafka security properties - " }
             return
         }
     }
