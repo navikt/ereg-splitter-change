@@ -27,7 +27,7 @@ class BootstrapTests : StringSpec() {
 
     init {
 
-        "Bootstrap should retry according to config when no access to topic" {
+        "Bootstrap should retry according to config when no access to topic".config(enabled = false) {
 
             // same logic applies to kafka down, non authe. user - whatever kafka issue
             // excluded from tests due to time consumption
@@ -59,7 +59,7 @@ class BootstrapTests : StringSpec() {
             }
         }
 
-        "Bootstrap should work when access to topic" {
+        "Bootstrap should work when access to topic".config(enabled = false) {
 
             // see injection of events in beforeSpec
 
@@ -120,7 +120,7 @@ class BootstrapTests : StringSpec() {
             }
         }
 
-        "Bootstrap should retry according to config when no access to ereg" {
+        "Bootstrap should retry according to config when no access to ereg".config(enabled = false) {
 
             // same logic applies to kafka down, non authe. user - whatever kafka issue
             // excluded from tests due to time consumption
