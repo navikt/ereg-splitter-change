@@ -9,7 +9,7 @@ import org.http4k.core.Status
 import org.http4k.filter.gzipped
 import org.http4k.routing.bind
 import org.http4k.routing.routes
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 
 private val log = KotlinLogging.logger {}
@@ -34,7 +34,7 @@ internal fun eregAPI(
     routes(
         ueEndpoint bind Method.GET to { Response(Status.OK).body(Body(File(filUEnheter).inputStream()).gzipped().body) },
         oeEndpoint bind Method.GET to { Response(Status.OK).body(Body(File(filOEnheter).inputStream()).gzipped().body) }
-    ).asServer(Jetty(port)).use { srv ->
+    ).asServer(Netty(port)).use { srv ->
         try {
             Response(Status.OK).body(Body(File(filOEnheter).inputStream()))
             srv.start()

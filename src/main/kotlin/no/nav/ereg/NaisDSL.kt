@@ -10,7 +10,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.routing.bind
 import org.http4k.routing.routes
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 
 object NaisDSL {
@@ -37,7 +37,7 @@ object NaisDSL {
             if (content.isNotEmpty()) Response(Status.OK).body(content)
             else Response(Status.NO_CONTENT).body(content)
         }
-    ).asServer(Jetty(8080))
+    ).asServer(Netty(8080))
 
     fun enabled(doSomething: () -> Unit) = api.use {
         try {
