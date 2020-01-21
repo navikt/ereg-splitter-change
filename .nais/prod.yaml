@@ -44,7 +44,7 @@ spec:
     - name: KAFKA_CLIENTID
       value: ereg-splitter-change
     - name: KAFKA_SECURITY
-      value: TRUE
+      value: 'TRUE'
     - name: KAFKA_SECPROT
       value: SASL_PLAINTEXT
     - name: KAFKA_SASLMEC
@@ -60,8 +60,8 @@ spec:
     - name: EREG_OEACCEPT
       value: application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8
     - name: RUN_EACH_MORNING
-      value: TRUE
+      value: 'TRUE'
     - name: MAX_ATTEMPTS
-      value: 24
+      value: '24'
     - name: MS_BETWEEN_RETRIES
-      value: 1800000
+      value: '1800000'
