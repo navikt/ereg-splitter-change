@@ -11,10 +11,12 @@ fun main() {
     log.info { "Checking environment variables" }
     EnvVarFactory.envVar.let { ev ->
 
-        if (!ev.eregDetailsComplete()) {
-            log.error { "EREG details are incomplete - " }
+        if (!ev.eregDetailsComplete() || !ev.proxyDetailsComplete()) {
+            log.error { "EREG - or proxy details are incomplete - " }
             return
         }
+
+        log.info { "Proxy details: ${ev.httpsProxy} with port ${ev.noProxy}" }
 
         if (ev.kafkaSecurityEnabled() && !ev.kafkaSecurityComplete()) {
             log.error { "Kafka security enabled, but incomplete kafka security properties - " }

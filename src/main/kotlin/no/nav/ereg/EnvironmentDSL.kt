@@ -28,6 +28,9 @@ data class EnvVar(
     val eregUEAccept: String = System.getenv("EREG_UEACCEPT")?.toString() ?: "",
     val eregOEUrl: String = System.getenv("EREG_OEURL")?.toString() ?: "",
     val eregOEAccept: String = System.getenv("EREG_OEACCEPT")?.toString() ?: "",
+    val httpProxy: String = System.getenv("HTTP_PROXY")?.toString() ?: "",
+    val httpsProxy: String = System.getenv("HTTPS_PROXY")?.toString() ?: "",
+    val noProxy: String = System.getenv("NO_PROXY")?.toString() ?: "",
 
     val runEachMorning: String = System.getenv("RUN_EACH_MORNING")?.toString()?.toUpperCase() ?: "FALSE",
     val maxAttempts: Int = System.getenv("MAX_ATTEMPTS")?.toInt() ?: 36,
@@ -41,5 +44,7 @@ fun EnvVar.kafkaSecurityComplete(): Boolean =
 
 fun EnvVar.eregDetailsComplete(): Boolean =
     eregUEUrl.isNotEmpty() && eregUEAccept.isNotEmpty() && eregOEUrl.isNotEmpty() && eregOEAccept.isNotEmpty()
+
+fun EnvVar.proxyDetailsComplete(): Boolean = httpsProxy.isNotEmpty() && noProxy.isNotEmpty()
 
 fun EnvVar.runEachMorning(): Boolean = runEachMorning == "TRUE"
