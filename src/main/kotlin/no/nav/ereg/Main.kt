@@ -11,8 +11,8 @@ fun main() {
     log.info { "Checking environment variables" }
     EnvVarFactory.envVar.let { ev ->
 
-        if (!ev.eregDetailsComplete() || !ev.proxyDetailsComplete()) {
-            log.error { "EREG - or proxy details are incomplete - " }
+        if (!ev.eregDetailsComplete()) {
+            log.error { "EREG details are incomplete - " }
             return
         }
 

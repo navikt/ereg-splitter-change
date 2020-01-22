@@ -3,9 +3,14 @@ package no.nav.ereg
 import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 import java.lang.StringBuilder
+import java.net.URI
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
+import org.apache.http.HttpHost
+import org.apache.http.client.config.CookieSpecs
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.impl.client.HttpClients
 import org.http4k.client.ApacheClient
 import org.http4k.core.BodyMode
 import org.http4k.core.Method
@@ -37,7 +42,23 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
     val responseTime = Metrics.responseLatency.labels(eregEntity.type.toString()).startTimer()
 
     log.info { "${eregEntity.type}, request json data set as stream" }
-    val resp = ApacheClient(responseBodyMode = BodyMode.Stream)
+
+    val hp = EnvVarFactory.envVar.httpsProxy
+    val apacheHttpClient = if (hp.isNotEmpty()) {
+        ApacheClient(client =
+            HttpClients.custom()
+                .setDefaultRequestConfig(
+                    RequestConfig.custom()
+                        .setProxy(HttpHost(URI(hp).host, URI(hp).port, URI(hp).scheme))
+                        .setRedirectsEnabled(false)
+                        .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
+                        .build())
+                .build(),
+            responseBodyMode = BodyMode.Stream
+        )
+    } else ApacheClient(responseBodyMode = BodyMode.Stream)
+
+    val resp = apacheHttpClient
         .runCatching { invoke(eregEntity.getRequest()).also { responseTime.observeDuration() } }
         .onSuccess { response ->
             if (response.status.successful) {

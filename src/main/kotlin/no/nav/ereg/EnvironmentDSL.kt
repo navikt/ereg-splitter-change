@@ -44,8 +44,6 @@ fun EnvVar.kafkaSecurityComplete(): Boolean =
 fun EnvVar.eregDetailsComplete(): Boolean =
     eregUEUrl.isNotEmpty() && eregUEAccept.isNotEmpty() && eregOEUrl.isNotEmpty() && eregOEAccept.isNotEmpty()
 
-fun EnvVar.proxyDetailsComplete(): Boolean = httpsProxy.isNotEmpty()
-
 fun EnvVar.runEachMorning(): Boolean = runEachMorning == "TRUE"
 
 fun EnvVar.getOEUrl() = "$httpsProxy$eregOEUrl"
