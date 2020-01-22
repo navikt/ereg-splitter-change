@@ -16,7 +16,7 @@ fun main() {
             return
         }
 
-        log.info { "Proxy details: ${ev.httpsProxy} with port ${ev.noProxy}" }
+        log.info { "Proxy details: ${ev.httpsProxy} with no proxy details: ${ev.noProxy}" }
 
         if (ev.kafkaSecurityEnabled() && !ev.kafkaSecurityComplete()) {
             log.error { "Kafka security enabled, but incomplete kafka security properties - " }

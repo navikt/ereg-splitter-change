@@ -77,8 +77,8 @@ internal fun work(ev: EnvVar) {
         }
     ) {
         listOf(
-            EREGEntity(EREGEntityType.ENHET, ev.eregOEUrl, ev.eregOEAccept),
-            EREGEntity(EREGEntityType.UNDERENHET, ev.eregUEUrl, ev.eregUEAccept)
+            EREGEntity(EREGEntityType.ENHET, ev.getOEUrl(), ev.eregOEAccept),
+            EREGEntity(EREGEntityType.UNDERENHET, ev.getUEUrl(), ev.eregUEAccept)
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
             if (!ShutdownHook.isActive() && ServerState.isOk()) {
