@@ -45,6 +45,3 @@ fun EnvVar.eregDetailsComplete(): Boolean =
     eregUEUrl.isNotEmpty() && eregUEAccept.isNotEmpty() && eregOEUrl.isNotEmpty() && eregOEAccept.isNotEmpty()
 
 fun EnvVar.runEachMorning(): Boolean = runEachMorning == "TRUE"
-
-fun EnvVar.getOEUrl() = "$httpsProxy$eregOEUrl"
-fun EnvVar.getUEUrl() = "$httpsProxy$eregUEUrl"
