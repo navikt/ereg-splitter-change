@@ -40,13 +40,13 @@ spec:
         kvPath: /serviceuser/data/dev/srveregsplchg
   env:
     - name: KAFKA_BROKERS
-      value: b27apvl00045.preprod.local:8443,b27apvl00046.preprod.local:8443,b27apvl00047.preprod.local:8443
+      value: SASL_SSL://b27apvl00045.preprod.local:8443,SASL_SSL://b27apvl00046.preprod.local:8443,SASL_SSL://b27apvl00047.preprod.local:8443
     - name: KAFKA_CLIENTID
       value: ereg-splitter-change
     - name: KAFKA_SECURITY
       value: 'TRUE'
     - name: KAFKA_SECPROT
-      value: SASL_PLAINTEXT
+      value: SASL_SSL
     - name: KAFKA_SASLMEC
       value: PLAIN
     - name: KAFKA_TOPIC
