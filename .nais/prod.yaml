@@ -47,7 +47,7 @@ spec:
     - name: KAFKA_SECURITY
       value: 'TRUE'
     - name: KAFKA_SECPROT
-      value: SASL_PLAINTEXT
+      value: SASL_SSL
     - name: KAFKA_SASLMEC
       value: PLAIN
     - name: KAFKA_TOPIC
