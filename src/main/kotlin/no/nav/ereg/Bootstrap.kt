@@ -12,6 +12,8 @@ object Bootstrap {
 
     private val log = KotlinLogging.logger { }
 
+    // TODO - maybe a reread of env in each run, in case of changes in vault
+
     fun start(ev: EnvVar = EnvVarFactory.envVar) {
 
         ShutdownHook.reset()
