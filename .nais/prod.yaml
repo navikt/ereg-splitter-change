@@ -6,6 +6,7 @@ metadata:
   labels:
     team: teamcrm
 spec:
+  webproxy: true
   image: {{ image }}
   port: 8080
   replicas:
@@ -27,10 +28,10 @@ spec:
   resources:
     limits:
       cpu: 1000m
-      memory: 4Gi
+      memory: 8192Mi
     requests:
       cpu: 100m
-      memory: 2Gi
+      memory: 4096Mi
   vault:
     enabled: true
     paths:
@@ -40,7 +41,7 @@ spec:
         kvPath: /serviceuser/data/prod/srveregsplchg
   env:
     - name: KAFKA_BOOTSTRAP_SERVERS
-      value: a01apvl00145.adeo.no:8443,a01apvl00146.adeo.no:8443,a01apvl00147.adeo.no:8443,a01apvl00148.adeo.no:8443,a01apvl00149.adeo.no:8443,a01apvl00150.adeo.no:8443
+      value: SASL_SSL://a01apvl00145.adeo.no:8443,SASL_SSL://a01apvl00146.adeo.no:8443,SASL_SSL://a01apvl00147.adeo.no:8443,SASL_SSL://a01apvl00148.adeo.no:8443,SASL_SSL://a01apvl00149.adeo.no:8443,SASL_SSL://a01apvl00150.adeo.no:8443
     - name: KAFKA_CLIENTID
       value: ereg-splitter-change
     - name: KAFKA_SECURITY
@@ -52,13 +53,13 @@ spec:
     - name: KAFKA_TOPIC
       value: public-ereg-cache-org-json
     - name: EREG_UEURL
-      value: https://data.brreg.no/enhetsregisteret/api/underenheter/lastned
+      value: 'https://data.brreg.no/enhetsregisteret/api/underenheter/lastned'
     - name: EREG_UEACCEPT
-      value: application/vnd.brreg.enhetsregisteret.underenhet.v1+gzip;charset=UTF-8
+      value: 'application/vnd.brreg.enhetsregisteret.underenhet.v1+gzip;charset=UTF-8'
     - name:  EREG_OEURL
-      value: https://data.brreg.no/enhetsregisteret/api/enheter/lastned
+      value: 'https://data.brreg.no/enhetsregisteret/api/enheter/lastned'
     - name: EREG_OEACCEPT
-      value: application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8
+      value: 'application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8'
     - name: RUN_EACH_MORNING
       value: 'TRUE'
     - name: MAX_ATTEMPTS

@@ -2,7 +2,7 @@
 
 A microservice publishing all 'enhetsregiseter' changes (Brønnøysund) to kafka compaction log 'public-ereg-cache-org-json'.
 
-Each event is describe by the following protobuf 3 specification
+Each event is described by the following protobuf 3 specification
 ```proto
 // this message will be the key part of kafka payload
 message EregOrganisationEventKey {
