@@ -15,6 +15,12 @@ internal fun getOrgNoHashCache(
 
     log.info { "Get orgno-hashcode cache from compaction log - ${ev.kafkaTopic}" }
 
+    // using map that will always give the latest hashcode for an org with multiple events in kafka log compaction
+    // due to delayed log cleaning
+
+    val enheter: MutableMap<String, Int> = mutableMapOf()
+    val underenheter: MutableMap<String, Int> = mutableMapOf()
+
     getKafkaConsumerByConfig<ByteArray, ByteArray>(
         mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to ev.kafkaBrokers,
@@ -32,23 +38,33 @@ internal fun getOrgNoHashCache(
         fromBeginning = true
     ) { cRecords ->
         if (!cRecords.isEmpty) {
-            map.putAll(
-                cRecords
-                    .map {
-                        val key = it.key().protobufSafeParseKey()
-                        Metrics.cachedOrgNoHashCode.labels(key.orgType.toString()).inc()
-                        key.orgNumber to it.value().protobufSafeParseValue().jsonHashCode
-                    }
-                    .filter { it.first.isNotEmpty() }
-            )
+
+            cRecords.map {
+                val key = it.key().protobufSafeParseKey()
+                Triple<String, EREGEntityType, Int>(
+                    key.orgNumber,
+                    EREGEntityType.valueOf(key.orgType.toString()),
+                    it.value().protobufSafeParseValue().jsonHashCode)
+            }
+                .filter { it.first.isNotEmpty() }
+                .groupBy { it.second }
+                .let { tmp ->
+                    tmp[EREGEntityType.ENHET]?.let { list -> enheter.putAll(list.map { tri -> tri.first to tri.third }) }
+                    tmp[EREGEntityType.UNDERENHET]?.let { list -> underenheter.putAll(list.map { tri -> tri.first to tri.third }) }
+                }
             ConsumerStates.IsOkNoCommit
         } else {
             log.info { "Cache completed - leaving kafka consumer loop" }
             ConsumerStates.IsFinished
         }
     }
-    log.info { "Cache size for orgno-hashcode - ${map.size} entries" }
 
+    Metrics.cachedOrgNoHashCode.labels(EREGEntityType.ENHET.toString()).inc(enheter.size.toDouble())
+    Metrics.cachedOrgNoHashCode.labels(EREGEntityType.UNDERENHET.toString()).inc(underenheter.size.toDouble())
+    log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries" }
+
+    map.putAll(enheter)
+    map.putAll(underenheter)
     map
 }
 

@@ -1,7 +1,6 @@
 package no.nav.ereg
 
 import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.Counter
 import io.prometheus.client.Gauge
 import io.prometheus.client.Histogram
 import io.prometheus.client.hotspot.DefaultExports
@@ -54,9 +53,9 @@ object Metrics {
         .help("No. of organisations published to kafka in last work session")
         .register()
 
-    val cachedOrgNoHashCode: Counter = Counter
+    val cachedOrgNoHashCode: Gauge = Gauge
         .build()
-        .name("cached_orgno_hashcode_event_counter")
+        .name("cached_orgno_hashcode_event_gauge")
         .labelNames("type")
         .help("No. of cached orgno-hashcode consumed in last work session")
         .register()
