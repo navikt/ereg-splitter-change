@@ -102,7 +102,6 @@ internal fun work(ev: EnvVar) {
                     log.info { "${eregEntity.type}, got sequence iterator, publishing changes to kafka" }
                     publishIterator(seqIter, ev.kafkaTopic)
                         .also { noOfEvents ->
-                            Metrics.publishedOrgs.labels(eregEntity.type.toString()).inc(noOfEvents.toDouble())
                             log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka (${ev.kafkaTopic})" }
                         }
                 } // end of use for InputStreamReader - AutoCloseable

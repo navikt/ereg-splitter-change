@@ -49,7 +49,7 @@ object Metrics {
     val publishedOrgs: Gauge = Gauge
         .build()
         .name("published_organisation_gauge")
-        .labelNames("type")
+        .labelNames("type", "status")
         .help("No. of organisations published to kafka in last work session")
         .register()
 

@@ -115,10 +115,13 @@ internal fun InputStreamReader.asSequence(
 ): Sequence<KafkaPayload<ByteArray, ByteArray>> =
     generateSequence { captureJsonOrgObject().takeIf { jsonOrgObject -> jsonOrgObject.isOk() } }
         .filter { jsonOrgObject ->
-            !cache.containsKey(jsonOrgObject.orgNo) || (
-                    cache.containsKey(jsonOrgObject.orgNo) &&
-                            cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode
-                    )
+            !cache.containsKey(jsonOrgObject.orgNo)
+                .also {
+                    if (it) Metrics.publishedOrgs.labels(eregType.toString(), "NY").inc()
+            } || (cache.containsKey(jsonOrgObject.orgNo) && cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
+                .also {
+                    if (it) Metrics.publishedOrgs.labels(eregType.toString(), "ENDRET").inc()
+                }
         }
         .map { it.toKafkaPayload(eregType) }
 
