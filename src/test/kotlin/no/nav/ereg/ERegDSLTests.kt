@@ -142,7 +142,7 @@ class ERegDSLTests : StringSpec({
 
     "EregDSL should give a set of correct KafkaPayload for underenhet" {
         val s1 = InputStreamReader(File(FILUENHETER).inputStream())
-            .asSequence(EREGEntityType.UNDERENHET, emptyMap())
+            .asFilteredSequence(EREGEntityType.UNDERENHET, emptyMap())
             .toSet()
         val s2 = underenheter.map { it.value.toKafkaPayload(EREGEntityType.UNDERENHET) }.toSet()
 
@@ -151,12 +151,12 @@ class ERegDSLTests : StringSpec({
 
     "EregDSL should give a set of correct KafkaPayload for changed underenheter" {
         val cache = InputStreamReader(File(FILUENHETER).inputStream())
-            .asSequence(EREGEntityType.UNDERENHET, emptyMap())
+            .asFilteredSequence(EREGEntityType.UNDERENHET, emptyMap())
             .map { it.key.protobufSafeParseKey().orgNumber to it.value.protobufSafeParseValue().jsonHashCode }
             .toMap()
 
         val changes = InputStreamReader(File(FILUENHETERCHANGED).inputStream())
-            .asSequence(EREGEntityType.UNDERENHET, cache)
+            .asFilteredSequence(EREGEntityType.UNDERENHET, cache)
             .toSet()
 
         // FILUENHETERCHANGED contains 3 changes compared to FILUENHETER
@@ -225,12 +225,12 @@ class ERegDSLTests : StringSpec({
 
     "EregDSL should give a set of correct KafkaPayload for changed enheter" {
         val cache = InputStreamReader(File(FILOENHETER).inputStream())
-            .asSequence(EREGEntityType.ENHET, emptyMap())
+            .asFilteredSequence(EREGEntityType.ENHET, emptyMap())
             .map { it.key.protobufSafeParseKey().orgNumber to it.value.protobufSafeParseValue().jsonHashCode }
             .toMap()
 
         val changes = InputStreamReader(File(FILOENHETERCHANGED).inputStream())
-            .asSequence(EREGEntityType.ENHET, cache)
+            .asFilteredSequence(EREGEntityType.ENHET, cache)
             .toSet()
 
         // FILOENHETERCHANGED contains 2 changes compared to FILOENHETER

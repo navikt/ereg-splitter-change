@@ -83,7 +83,7 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
                 if (streamAvailable.first)
                     InputStreamReader(streamAvailable.second)
                     .use {
-                        doConsume(it.asSequence(eregEntity.type, cache).iterator())
+                        doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
                         log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
                     }
             } else {
@@ -108,20 +108,22 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
  * - there are more data in stream
  * - there are no issues with the stream
  * - the org.no is found
+ * - the org is new of updated
  */
-internal fun InputStreamReader.asSequence(
+internal fun InputStreamReader.asFilteredSequence(
     eregType: EREGEntityType,
     cache: Map<String, Int>
 ): Sequence<KafkaPayload<ByteArray, ByteArray>> =
     generateSequence { captureJsonOrgObject().takeIf { jsonOrgObject -> jsonOrgObject.isOk() } }
         .filter { jsonOrgObject ->
-            !cache.containsKey(jsonOrgObject.orgNo)
-                .also {
-                    if (it) Metrics.publishedOrgs.labels(eregType.toString(), "NY").inc()
-            } || (cache.containsKey(jsonOrgObject.orgNo) && cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
-                .also {
-                    if (it) Metrics.publishedOrgs.labels(eregType.toString(), "ENDRET").inc()
-                }
+
+            val new = !cache.containsKey(jsonOrgObject.orgNo)
+            val updated = (cache.containsKey(jsonOrgObject.orgNo) && cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
+
+            if (new) Metrics.publishedOrgs.labels(eregType.toString(), "NY").inc()
+            if (updated) Metrics.publishedOrgs.labels(eregType.toString(), "ENDRET").inc()
+
+            new || updated
         }
         .map { it.toKafkaPayload(eregType) }
 
