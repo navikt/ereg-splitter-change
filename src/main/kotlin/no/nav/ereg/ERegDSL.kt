@@ -119,9 +119,11 @@ internal fun InputStreamReader.asFilteredSequence(
 
             val new = !cache.containsKey(jsonOrgObject.orgNo)
             val updated = (cache.containsKey(jsonOrgObject.orgNo) && cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
+            val noChange = !(new || updated)
 
             if (new) Metrics.publishedOrgs.labels(eregType.toString(), "NY").inc()
             if (updated) Metrics.publishedOrgs.labels(eregType.toString(), "ENDRET").inc()
+            if (noChange) Metrics.publishedOrgs.labels(eregType.toString(), "UENDRET").inc()
 
             new || updated
         }
