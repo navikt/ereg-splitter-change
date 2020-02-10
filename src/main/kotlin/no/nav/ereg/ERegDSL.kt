@@ -103,6 +103,20 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
     resp.status.successful
 }
 
+internal sealed class ObjectInCacheStatus(val name: String) {
+    object New : ObjectInCacheStatus("NY")
+    object Updated : ObjectInCacheStatus("ENDRET")
+    object NoChange : ObjectInCacheStatus("UENDRET")
+}
+
+internal fun Map<String, Int>.exists(jsonOrgObject: JsonOrgObject): ObjectInCacheStatus =
+    if (!this.containsKey(jsonOrgObject.orgNo))
+        ObjectInCacheStatus.New
+    else if ((this.containsKey(jsonOrgObject.orgNo) && this[jsonOrgObject.orgNo] != jsonOrgObject.hashCode))
+        ObjectInCacheStatus.Updated
+    else
+        ObjectInCacheStatus.NoChange
+
 /**
  * asSequence generates a lazy sequence of KafkaPayload mapped from JsonOrgObject as long as
  * - there are more data in stream
@@ -117,15 +131,10 @@ internal fun InputStreamReader.asFilteredSequence(
     generateSequence { captureJsonOrgObject().takeIf { jsonOrgObject -> jsonOrgObject.isOk() } }
         .filter { jsonOrgObject ->
 
-            val new = !cache.containsKey(jsonOrgObject.orgNo)
-            val updated = (cache.containsKey(jsonOrgObject.orgNo) && cache[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
-            val noChange = !(new || updated)
+            val status = cache.exists(jsonOrgObject)
 
-            if (new) Metrics.publishedOrgs.labels(eregType.toString(), "NY").inc()
-            if (updated) Metrics.publishedOrgs.labels(eregType.toString(), "ENDRET").inc()
-            if (noChange) Metrics.publishedOrgs.labels(eregType.toString(), "UENDRET").inc()
-
-            new || updated
+            Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
+            status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
         }
         .map { it.toKafkaPayload(eregType) }
 
