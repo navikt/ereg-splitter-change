@@ -51,7 +51,7 @@ spec:
     - name: KAFKA_SASLMEC
       value: PLAIN
     - name: KAFKA_TOPIC
-      value: public-ereg-cache-org-json
+      value: privat-whatever
     - name: EREG_UEURL
       value: 'https://data.brreg.no/enhetsregisteret/api/underenheter/lastned'
     - name: EREG_UEACCEPT
