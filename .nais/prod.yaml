@@ -56,7 +56,7 @@ spec:
       value: 'https://data.brreg.no/enhetsregisteret/api/underenheter/lastned'
     - name: EREG_UEACCEPT
       value: 'application/vnd.brreg.enhetsregisteret.underenhet.v1+gzip;charset=UTF-8'
-    - name:  EREG_OEURL
+    - name: EREG_OEURL
       value: 'https://data.brreg.no/enhetsregisteret/api/enheter/lastned'
     - name: EREG_OEACCEPT
       value: 'application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8'
