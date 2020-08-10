@@ -38,7 +38,7 @@ spec:
       - mountPath: /var/run/secrets/nais.io/vault
         kvPath: /kv/preprod/sbs/ereg-splitter-change/default
       - mountPath: /var/run/secrets/nais.io/serviceuser
-        kvPath: /serviceuser/data/dev/srvwhatever
+        kvPath: /serviceuser/data/dev/srveregsplchg
   env:
     - name: KAFKA_BROKERS
       value: SASL_SSL://b27apvl00045.preprod.local:8443,SASL_SSL://b27apvl00046.preprod.local:8443,SASL_SSL://b27apvl00047.preprod.local:8443
