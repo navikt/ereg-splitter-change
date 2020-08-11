@@ -207,6 +207,7 @@ class ERegDSLTests : StringSpec({
 }"""
 
     "EregDSL should map JsonOrgObject (enhet) correctly to KafkaPayload" {
+        val testEnt = enheter[enheter.keys.first()]
         val kv1 = enheter[enheter.keys.first()]?.toKafkaPayload(EREGEntityType.ENHET)
         val kv2 = KafkaPayload<ByteArray, ByteArray>(
             EregOrganisationEventKey.newBuilder().apply {

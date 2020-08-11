@@ -7,6 +7,7 @@ import java.net.URI
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
+import no.nav.sf.library.AnEnvironment
 import org.apache.http.HttpHost
 import org.apache.http.client.config.CookieSpecs
 import org.apache.http.client.config.RequestConfig
@@ -20,6 +21,20 @@ import org.http4k.core.Status
 import org.http4k.filter.gunzipped
 
 private val log = KotlinLogging.logger {}
+
+const val EV_eregUEUrl = "EREG_UEURL"
+const val EV_eregUEAccept = "EREG_UEACCEPT"
+const val EV_eregOEUrl = "EREG_OEURL"
+const val EV_eregOEAccept = "EREG_OEACCEPT"
+
+const val EV_httpsProxy = "HTTPS_PROXY"
+
+val eregUEUrl = AnEnvironment.getEnvOrDefault(EV_eregUEUrl, "")
+val eregUEAccept = AnEnvironment.getEnvOrDefault(EV_eregUEAccept, "")
+val eregOEUrl = AnEnvironment.getEnvOrDefault(EV_eregOEUrl, "")
+val eregOEAccept = AnEnvironment.getEnvOrDefault(EV_eregOEAccept, "")
+
+val httpsProxy: String = AnEnvironment.getEnvOrDefault(EV_httpsProxy, "")
 
 data class EREGEntity(
     val type: EREGEntityType,
@@ -43,7 +58,7 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
 
     log.info { "${eregEntity.type}, request json data set as stream" }
 
-    val hp = EnvVarFactory.envVar.httpsProxy
+    val hp = httpsProxy
     val apacheHttpClient = if (hp.isNotEmpty()) {
         ApacheClient(client =
             HttpClients.custom()

@@ -1,14 +1,6 @@
 package no.nav.ereg
 
-import io.kotlintest.Spec
-import io.kotlintest.TestCase
-import io.kotlintest.shouldBe
-import io.kotlintest.specs.StringSpec
-import no.nav.common.JAASCredential
-import no.nav.common.KafkaEnvironment
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.serialization.ByteArraySerializer
-
+/*
 class BootstrapTests : StringSpec() {
 
     // establish kafka environment
@@ -16,6 +8,7 @@ class BootstrapTests : StringSpec() {
     private val topicAccess = "topic-access"
     private val kafkaUser = JAASCredential("srvkafkap1", "kafkap1")
 
+    /*
     private val ke = KafkaEnvironment(
         topicNames = listOf(topicNoAccess, topicAccess),
         withSecurity = true,
@@ -197,4 +190,7 @@ class BootstrapTests : StringSpec() {
         super.afterSpec(spec)
         ke.tearDown()
     }
+
+     */
 }
+*/

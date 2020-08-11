@@ -27,6 +27,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-wrapper-
       - name: Build and run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GPR_READ_EREG_SPLITTER_CHANGE }}
         run: ./gradlew clean build
 
   build:
@@ -52,6 +54,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-wrapper-
       - name: Build JAR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GPR_READ_EREG_SPLITTER_CHANGE }}
         run: ./gradlew clean build shadowJar -x test
       - name: Build and publish Docker image
         env:

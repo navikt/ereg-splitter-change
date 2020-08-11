@@ -12,6 +12,8 @@ buildscript {
     ext.logstash_encoder_version = '6.3'
     ext.prometheus_version = '0.8.0'
     ext.junit5_version = '3.4.2'
+
+    ext.crm_utilities_version = '0.77'
 }
 
 plugins {
@@ -68,6 +70,18 @@ repositories {
     maven {
         url "http://packages.confluent.io/maven"
     }
+
+    ["maven-release", "crm-utilities"].each { repo ->
+        String token = System.getenv("GITHUB_TOKEN") ?: project.findProperty("githubPassword")
+        if (!token) throw new NullPointerException("Missing token, you have to set GITHUB_TOKEN or githubPassword")
+        maven {
+            url = uri("https://maven.pkg.github.com/navikt/$repo")
+            credentials {
+                username = 'x-access-token'
+                password = token
+            }
+        }
+    }
 }
 
 configurations {
@@ -76,6 +90,8 @@ configurations {
 
 
 dependencies {
+    implementation "no.nav.sf.library:crm-utilities:$crm_utilities_version"
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_coroutine"
 
