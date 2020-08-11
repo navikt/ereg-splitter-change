@@ -66,3 +66,5 @@ spec:
       value: '24'
     - name: MS_BETWEEN_RETRIES
       value: '1800000'
+    - name: VAULT_INSTANCE
+      value: PRODUCTION
