@@ -22,13 +22,6 @@ const val EV_kafkaTopic = "KAFKA_TOPIC"
 val kafkaOrgTopic = AnEnvironment.getEnvOrDefault(EV_kafkaTopic, "$PROGNAME-producer")
 
 data class WorkSettings(
-    /* legacy - TODO compare to old version of others:
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to ev.kafkaBrokers,
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.GROUP_ID_CONFIG to ev.kafkaClientID,
-            ConsumerConfig.CLIENT_ID_CONFIG to ev.kafkaClientID,
-            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to "false" */
     val kafkaConsumerOrg: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java
@@ -108,7 +101,7 @@ data class WMetrics(
     val sizeOfCache: Gauge = Gauge
         .build()
         .name("size_of_cache")
-        .help("Size of person cache")
+        .help("Size of ereg cache")
         .register(),
 
     val publishedOrgs: Gauge = Gauge
@@ -164,7 +157,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         }
     }
 
-    // TODO Based on global ServerStates in publishiterator etc. Find another solution for error handling?
+    // TODO Legacy: Based on global ServerStates in publishiterator etc. Find another solution for error handling?
     return if (ServerState.isOk()) {
         Pair(ws, ExitReason.Work)
     } else {

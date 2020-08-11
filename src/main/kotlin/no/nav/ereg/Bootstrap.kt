@@ -36,13 +36,14 @@ object Bootstrap {
             stop -> Unit
             !stop -> {
                 log.info { "Continue to loop" }
+                Metrics.sessionReset()
                 val result = work(ws)
                 if (result.second.isOK()) {
                     val delay = if (bootstrapRunEachMorning) getTomorrowMorning() else 1_000
                     conditionalWait(delay)
                     loop(result.first)
                 } else {
-                    Metrics.noOfAttempts.inc()
+                    Metrics.noOfAttempts.inc() // TODO Replace this with worksettings variable?
                     log.info { "Failed attempt ${Metrics.noOfAttempts.get().toInt()}/$bootstrapMaxAttempts" }
                     if (Metrics.noOfAttempts.get().toInt() < bootstrapMaxAttempts) {
                         conditionalWait(bootstrapRetryWaitTime)

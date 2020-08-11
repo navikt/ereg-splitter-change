@@ -70,7 +70,7 @@ object Metrics {
         cachedOrgNoHashCode.clear()
     }
 
-    fun resetAll() {
+    fun resetAll() { // Legacy, only used in test
         receivedBytes.clear()
         responseLatency.clear()
         successfulRequest.clear()
