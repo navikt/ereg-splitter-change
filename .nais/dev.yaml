@@ -68,4 +68,3 @@ spec:
       value: '1800000'
     - name: VAULT_INSTANCE
       value: PREPROD
-
