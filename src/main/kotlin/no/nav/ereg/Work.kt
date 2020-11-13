@@ -32,6 +32,10 @@ data class WorkSettings(
     )
 )
 
+enum class FileStatus {
+    NOT_PRESENT, SAME, UPDATED, NEW
+}
+
 sealed class Cache {
     object Missing : Cache()
     object Invalid : Cache()
@@ -39,6 +43,8 @@ sealed class Cache {
     data class Exist(val map: Map<String, Int>) : Cache() {
         val isEmpty: Boolean
             get() = map.isEmpty()
+        val statusBeforeFileRead: Map<String, FileStatus>
+            get() = map.map { it.key to FileStatus.NOT_PRESENT }.toMap()
     }
 
     companion object {
@@ -134,6 +140,9 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     val cache = tmp as Cache.Exist
     workMetrics.sizeOfCache.set(cache.map.size.toDouble())
 
+    cacheFileStatusMap.clear() // Make sure empty
+    cacheFileStatusMap.putAll(cache.statusBeforeFileRead)
+
     log.info { "Continue work with Cache" }
 
     AKafkaProducer<ByteArray, ByteArray>(
@@ -156,6 +165,14 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
             }
         }
     }
+
+    log.info { "Finished work session. Number of already existing: ${cacheFileStatusMap.values.count { it == FileStatus.SAME }}" +
+            ", updated: ${cacheFileStatusMap.values.count { it == FileStatus.UPDATED }}" +
+            ", new: ${cacheFileStatusMap.values.count { it == FileStatus.NEW }}" +
+            ", not present: ${cacheFileStatusMap.values.count { it == FileStatus.NOT_PRESENT }}" +
+            ", server state ok? ${ServerState.isOk()}" }
+
+    cacheFileStatusMap.clear() // Free memory
 
     // TODO Legacy: Based on global ServerStates in publishiterator etc. Find another solution for error handling?
     return if (ServerState.isOk()) {
