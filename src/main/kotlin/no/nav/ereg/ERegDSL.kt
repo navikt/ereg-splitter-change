@@ -47,6 +47,8 @@ enum class EREGEntityType {
     ENHET
 }
 
+var cacheFileStatusMap: MutableMap<String, FileStatus> = mutableMapOf()
+
 private fun EREGEntity.getRequest() = Request(Method.GET, this.url).header("Accept", this.acceptHeaderValue)
 
 internal fun EREGEntity.getJsonAsSequenceIterator(
@@ -147,6 +149,11 @@ internal fun InputStreamReader.asFilteredSequence(
         .filter { jsonOrgObject ->
 
             val status = cache.exists(jsonOrgObject)
+            when (status) {
+                ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
+                ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
+                ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
+            }
 
             Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
             status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
