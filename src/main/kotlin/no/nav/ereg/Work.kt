@@ -9,6 +9,7 @@ import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
 import no.nav.sf.library.getAllRecords
+import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
@@ -54,10 +55,10 @@ sealed class Cache {
                     when {
                         result.hasMissingKey() -> Missing
                             .also { log.error { "Cache has null in key" } }
-                        result.hasMissingValue() -> {
-                            Missing
-                                .also { log.error { "Cache has null in value" } }
-                        }
+                        // result.hasMissingValue() -> {
+                        //    Missing
+                        //        .also { log.error { "Cache has null in value" } }
+                        // }
                         else -> {
                             val enheter: MutableMap<String, Int> = mutableMapOf()
                             val underenheter: MutableMap<String, Int> = mutableMapOf()
@@ -76,11 +77,16 @@ sealed class Cache {
                                 }
                             Metrics.cachedOrgNoHashCode.labels(EREGEntityType.ENHET.toString()).inc(enheter.size.toDouble())
                             Metrics.cachedOrgNoHashCode.labels(EREGEntityType.UNDERENHET.toString()).inc(underenheter.size.toDouble())
-                            log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries" }
-
+                            val tombstones: MutableSet<String> = mutableSetOf()
+                            result.getKeysTombstones().map {
+                                it.k.protobufSafeParseKey().orgNumber
+                            }.filter { it.isNotEmpty() }.let { tombstones.addAll(it) }
                             val cacheMap: MutableMap<String, Int> = mutableMapOf()
                             cacheMap.putAll(enheter)
                             cacheMap.putAll(underenheter)
+                            cacheMap.putAll(tombstones.map { it to 0 })
+
+                            log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
                             Exist(cacheMap).also { log.info { "Cache size is ${it.map.size}" } }
                         }
@@ -114,6 +120,12 @@ data class WMetrics(
         .build()
         .name("published_orgs")
         .help("Number of published orgs")
+        .register(),
+
+    val publishedTombstones: Gauge = Gauge
+        .build()
+        .name("published_tombstones")
+        .help("Number of published tombstones")
         .register()
 ) {
 
@@ -124,6 +136,7 @@ data class WMetrics(
 }
 val workMetrics = WMetrics()
 
+var sentTheOne = false
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "bootstrap work session starting" }
@@ -162,6 +175,20 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                             workMetrics.publishedOrgs.inc(noOfEvents.toDouble())
                         }
                 } // end of use for InputStreamReader - AutoCloseable
+            }
+        }
+        cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
+            if (!sentTheOne) {
+                sentTheOne = true // only one attempt
+                sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
+                    if (sent) {
+                        log.info { "Sent a tombstone on org ${it.key}" } // TODO remove after smoke test
+                        workMetrics.publishedTombstones.inc()
+                    } else {
+                        log.error { "Issue when producing tombstone" }
+                        ServerState.state = ServerStates.KafkaIssues
+                    }
+                }
             }
         }
     }

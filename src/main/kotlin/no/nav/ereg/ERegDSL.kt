@@ -204,6 +204,12 @@ internal fun JsonOrgObject.toKafkaPayload(eregType: EREGEntityType): KafkaPayloa
         }.toByteArray()
     )
 
+internal fun orgNumberAsKey(orgNumber: String): ByteArray =
+    EregOrganisationEventKey.newBuilder().apply {
+        this.orgNumber = orgNumber
+        orgType = EregOrganisationEventKey.OrgType.ENHET
+    }.build().toByteArray()
+
 internal enum class StreamState(val value: Int) {
     STREAM_EXCEPTION(-2),
     STREAM_ONGOING(0),
