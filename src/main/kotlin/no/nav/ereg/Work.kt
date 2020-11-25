@@ -136,7 +136,7 @@ data class WMetrics(
 }
 val workMetrics = WMetrics()
 
-var sentTheOne = false
+var sentTheOne = true // TODO Currently stopped from sending tombstones
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "bootstrap work session starting" }
@@ -178,7 +178,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
             }
         }
         cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
-            if (!sentTheOne) {
+            if (!sentTheOne) { // TODO Currently stopped from sending tombstones
                 sentTheOne = true // only one attempt
                 sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
                     if (sent) {
