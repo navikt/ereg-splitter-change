@@ -71,6 +71,7 @@ object Metrics {
     }
 
     fun resetAll() { // Legacy, only used in test
+
         receivedBytes.clear()
         responseLatency.clear()
         successfulRequest.clear()

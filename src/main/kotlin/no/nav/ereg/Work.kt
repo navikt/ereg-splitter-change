@@ -116,9 +116,9 @@ data class WMetrics(
         .help("Size of ereg cache")
         .register(),
 
-    val publishedOrgs: Gauge = Gauge
+    val numberOfPublishedOrgs: Gauge = Gauge
         .build()
-        .name("published_orgs")
+        .name("number_of_published_orgs")
         .help("Number of published orgs")
         .register(),
 
@@ -131,7 +131,9 @@ data class WMetrics(
 
     fun clearAll() {
         this.sizeOfCache.clear()
-        this.publishedOrgs.clear()
+        this.numberOfPublishedOrgs.clear()
+        this.sizeOfCache.clear()
+        this.publishedTombstones.clear()
     }
 }
 val workMetrics = WMetrics()
@@ -172,7 +174,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                     publishIterator(seqIter, kafkaOrgTopic)
                         .also { noOfEvents ->
                             log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
-                            workMetrics.publishedOrgs.inc(noOfEvents.toDouble())
+                            workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
                         }
                 } // end of use for InputStreamReader - AutoCloseable
             }
