@@ -131,7 +131,6 @@ data class WMetrics(
     fun clearAll() {
         this.sizeOfCache.clear()
         this.numberOfPublishedOrgs.clear()
-        this.sizeOfCache.clear()
         this.publishedTombstones.clear()
     }
 }
