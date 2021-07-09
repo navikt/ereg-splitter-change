@@ -137,7 +137,7 @@ data class WMetrics(
 
 val workMetrics = WMetrics()
 
-val ignoreCache = true
+val ignoreCache = false
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "bootstrap work session starting" }
