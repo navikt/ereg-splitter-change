@@ -106,10 +106,9 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
             } else {
                 Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
                 ServerState.state = ServerStates.EregIssues
-                log.error { "${eregEntity.type}, failed response - ${response.status.code}" }
+                log.error { "${eregEntity.type}, failed response - ${response.status.code}. Attemped request: ${eregEntity.getRequest()}" }
             }
-        }
-        .onFailure {
+        }.onFailure {
             responseTime.observeDuration()
             Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
             ServerState.state = ServerStates.EregIssues
@@ -117,7 +116,7 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
         }
         .getOrDefault(Response(Status.EXPECTATION_FAILED).body(""))
 
-    resp.status.successful
+    resp.status.successful // Not in use
 }
 
 internal sealed class ObjectInCacheStatus(val name: String) {

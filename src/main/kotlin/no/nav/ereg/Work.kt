@@ -137,6 +137,7 @@ data class WMetrics(
 
 val workMetrics = WMetrics()
 
+val ignoreCache = true
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "bootstrap work session starting" }
@@ -150,7 +151,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         return Pair(ws, ExitReason.NoCache)
     }
 
-    val cache = tmp as Cache.Exist
+    val cache = if (ignoreCache) Cache.Exist(mapOf()) else (tmp as Cache.Exist)
+
     workMetrics.sizeOfCache.set(cache.map.size.toDouble())
 
     cacheFileStatusMap.clear() // Make sure empty
@@ -168,24 +170,32 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
             // only do the work if everything is ok so far
             if (!ShutdownHook.isActive() && ServerState.isOk()) {
                 eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
-                    log.info { "${eregEntity.type}, got sequence iterator, publishing changes to kafka" }
-                    publishIterator(seqIter, kafkaOrgTopic)
-                        .also { noOfEvents ->
-                            log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
-                            workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
-                        }
+                    if (ServerState.isOk()) {
+                        log.info { "${eregEntity.type}, got sequence iterator and server state ok, publishing changes to kafka" }
+                        publishIterator(seqIter, kafkaOrgTopic)
+                            .also { noOfEvents ->
+                                log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
+                                workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
+                            }
+                    } else {
+                        log.error { "Skipping ${eregEntity.type} due to server state issue ${ServerState.state.javaClass.name}" }
+                    }
                 } // end of use for InputStreamReader - AutoCloseable
             }
         }
-        cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
-            sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
-                if (sent) {
-                    workMetrics.publishedTombstones.inc()
-                } else {
-                    log.error { "Issue when producing tombstone" }
-                    ServerState.state = ServerStates.KafkaIssues
+        if (ServerState.isOk()) {
+            cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
+                sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
+                    if (sent) {
+                        workMetrics.publishedTombstones.inc()
+                    } else {
+                        log.error { "Issue when producing tombstone" }
+                        ServerState.state = ServerStates.KafkaIssues
+                    }
                 }
             }
+        } else {
+            log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
         }
 
         log.info { "Published ${workMetrics.publishedTombstones.get().toInt()} tombstones. (Present tombstones in cache before: ${cache.map.count{it.value == 0}}" }
