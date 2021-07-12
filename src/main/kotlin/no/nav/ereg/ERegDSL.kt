@@ -128,8 +128,13 @@ internal sealed class ObjectInCacheStatus(val name: String) {
 internal fun Map<String, Int>.exists(jsonOrgObject: JsonOrgObject): ObjectInCacheStatus =
     if (!this.containsKey(jsonOrgObject.orgNo))
         ObjectInCacheStatus.New
-    else if ((this.containsKey(jsonOrgObject.orgNo) && this[jsonOrgObject.orgNo] != jsonOrgObject.hashCode))
-        ObjectInCacheStatus.Updated
+    else if (this[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
+        ObjectInCacheStatus.Updated.also {
+            if (examples > 0) {
+                examples--
+                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this ${this[jsonOrgObject.orgNo]} do not match ${jsonOrgObject.hashCode}" }
+            }
+        }
     else
         ObjectInCacheStatus.NoChange
 

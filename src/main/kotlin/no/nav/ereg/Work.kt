@@ -12,7 +12,6 @@ import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
 import no.nav.sf.library.Value
 import no.nav.sf.library.getAllRecords
-import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
@@ -103,7 +102,7 @@ sealed class Cache {
                             }
 
                             val m = c.toMap()
-
+                            log.info { " bad count $badCount" }
                             log.info { "C list length ${c.size}, m map size ${m.size}" }
                             /*
                             this.records.map {
@@ -120,9 +119,9 @@ sealed class Cache {
 
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
-                            log.info { "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET" +
-                            " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET" +
-                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} TOMB ENHET" +
+                            log.info { "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET," +
+                            " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET," +
+                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} TOMB ENHET," +
                                     " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} TOMB UNDERENHET" +
                                     " ${m.filter{it.key != null && it.value == null}.count()} TOMBSTONES TOTAL"
                             }
@@ -177,6 +176,7 @@ data class WMetrics(
 val workMetrics = WMetrics()
 
 val ignoreCache = false
+var examples = 3
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "SKIP bootstrap work session starting" }
@@ -197,8 +197,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     cacheFileStatusMap.clear() // Make sure empty
     cacheFileStatusMap.putAll(cache.statusBeforeFileRead)
 
-    log.info { "SKIP work after cache -load Continue work with Cache" }
-    return Pair(ws, ExitReason.NoEvents)
+    // log.info { "SKIP work after cache -load Continue work with Cache" }
+    // return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
             config = ws.kafkaProducerOrg
@@ -225,6 +225,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         }
         if (ServerState.isOk()) {
             cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
+                workMetrics.publishedTombstones.inc()
+                /*
                 sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
                     if (sent) {
                         workMetrics.publishedTombstones.inc()
@@ -233,6 +235,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                         ServerState.state = ServerStates.KafkaIssues
                     }
                 }
+
+                 */
             }
         } else {
             log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
