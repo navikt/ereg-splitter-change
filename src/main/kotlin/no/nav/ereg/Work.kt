@@ -86,6 +86,9 @@ sealed class Cache {
                             cacheMap.putAll(underenheter)
                             cacheMap.putAll(tombstones.map { it to 0 })
 
+                            val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
+                            log.info { "SKIP Presence of UE in tombstones $presenceUEinTombstones. Example UE: ${underenheter.keys.last()}" }
+
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
                             Exist(cacheMap).also { log.info { "Cache size is ${it.map.size}" } }
@@ -140,7 +143,7 @@ val workMetrics = WMetrics()
 val ignoreCache = false
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
-    log.info { "bootstrap work session starting" }
+    log.info { "SKIP bootstrap work session starting" }
 
     workMetrics.clearAll()
     ServerState.reset()
@@ -158,7 +161,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     cacheFileStatusMap.clear() // Make sure empty
     cacheFileStatusMap.putAll(cache.statusBeforeFileRead)
 
-    log.info { "Continue work with Cache" }
+    log.info { "SKIP work after cache -load Continue work with Cache" }
+    return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
             config = ws.kafkaProducerOrg
