@@ -2,12 +2,15 @@ package no.nav.ereg
 
 import io.prometheus.client.Gauge
 import mu.KotlinLogging
+import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.sf.library.AKafkaConsumer
 import no.nav.sf.library.AKafkaProducer
 import no.nav.sf.library.AllRecords
 import no.nav.sf.library.AnEnvironment
+import no.nav.sf.library.Key
 import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
+import no.nav.sf.library.Value
 import no.nav.sf.library.getAllRecords
 import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -86,12 +89,43 @@ sealed class Cache {
                             cacheMap.putAll(underenheter)
                             cacheMap.putAll(tombstones.map { it to 0 })
 
+                            var badCount = 0
+
+                            val c = result.records.map {
+                                if (it.first is Key.Exist && it.second is Value.Exist) {
+                                    (it.first as Key.Exist).k.protobufSafeParseKey() to (it.second as Value.Exist).v.protobufSafeParseValue().jsonHashCode
+                                } else if (it.first is Key.Exist && it.second is Value.Missing) {
+                                    (it.first as Key.Exist).k.protobufSafeParseKey() to null
+                                } else {
+                                    badCount++
+                                    null to null
+                                }
+                            }
+
+                            val m = c.toMap()
+
+                            log.info { "C list length ${c.size}, m map size ${m.size}" }
+                            /*
+                            this.records.map {
+            if (it.first is Key.Exist && it.second is Value.Missing)
+                KeyAndTombstone.Exist((it.first as Key.Exist<K>).k)
+            else KeyAndTombstone.Missing
+        }.filterIsInstance<KeyAndTombstone.Exist<K>>()
+                             */
+
                             val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
 
                             val presenceEinUE = enheter.keys.filter { underenheter.contains(it) }.count()
                             log.info { "SKIP Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}" }
 
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
+
+                            log.info { "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET" +
+                            " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET" +
+                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} TOMB ENHET" +
+                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} TOMB UNDERENHET" +
+                                    " ${m.filter{it.key != null && it.value == null}.count()} TOMBSTONES TOTAL"
+                            }
 
                             Exist(cacheMap).also { log.info { "Cache size is ${it.map.size}" } }
                         }
