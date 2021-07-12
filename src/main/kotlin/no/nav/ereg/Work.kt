@@ -176,7 +176,7 @@ data class WMetrics(
 val workMetrics = WMetrics()
 
 val ignoreCache = false
-var examples = 3
+var examples = 5
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info { "SKIP bootstrap work session starting" }

@@ -132,11 +132,16 @@ internal fun Map<String, Int>.exists(jsonOrgObject: JsonOrgObject): ObjectInCach
         ObjectInCacheStatus.Updated.also {
             if (examples > 0) {
                 examples--
-                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this ${this[jsonOrgObject.orgNo]} do not match ${jsonOrgObject.hashCode}" }
+                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this: ${this[jsonOrgObject.orgNo]?.toEvent()} do not match ${jsonOrgObject.hashCode?.toEvent()}" }
             }
         }
     else
         ObjectInCacheStatus.NoChange
+
+fun Int.toEvent(): String {
+    if (this == 0) return "TOMBSTONE"
+    return Int.toString()
+}
 
 /**
  * asSequence generates a lazy sequence of KafkaPayload mapped from JsonOrgObject as long as
