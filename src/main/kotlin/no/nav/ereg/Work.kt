@@ -12,6 +12,7 @@ import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
 import no.nav.sf.library.Value
 import no.nav.sf.library.getAllRecords
+import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
@@ -115,7 +116,7 @@ sealed class Cache {
                             val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
 
                             val presenceEinUE = enheter.keys.filter { underenheter.contains(it) }.count()
-                            log.info { "SKIP Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}" }
+                            log.info { "Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}" }
 
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
@@ -176,10 +177,10 @@ data class WMetrics(
 val workMetrics = WMetrics()
 
 val ignoreCache = false
-var examples = 5
+var examples = 0
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
-    log.info { "SKIP bootstrap work session starting" }
+    log.info { "bootstrap work session starting" }
 
     workMetrics.clearAll()
     ServerState.reset()
@@ -226,7 +227,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         if (ServerState.isOk()) {
             cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
                 workMetrics.publishedTombstones.inc()
-                /*
+
                 sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
                     if (sent) {
                         workMetrics.publishedTombstones.inc()
@@ -235,8 +236,6 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                         ServerState.state = ServerStates.KafkaIssues
                     }
                 }
-
-                 */
             }
         } else {
             log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
