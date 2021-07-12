@@ -87,7 +87,9 @@ sealed class Cache {
                             cacheMap.putAll(tombstones.map { it to 0 })
 
                             val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
-                            log.info { "SKIP Presence of UE in tombstones $presenceUEinTombstones. Example UE: ${underenheter.keys.last()}" }
+
+                            val presenceEinUE = enheter.keys.filter { underenheter.contains(it) }.count()
+                            log.info { "SKIP Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}" }
 
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
