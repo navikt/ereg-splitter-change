@@ -176,7 +176,7 @@ data class WMetrics(
 
 val workMetrics = WMetrics()
 
-val ignoreCache = false
+val ignoreCache = true
 var examples = 0
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
