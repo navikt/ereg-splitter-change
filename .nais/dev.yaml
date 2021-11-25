@@ -2,7 +2,7 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: ereg-splitter-change
-  namespace: default
+  namespace: teamcrm
   labels:
     team: teamcrm
 spec:
