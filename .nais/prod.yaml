@@ -71,6 +71,6 @@ spec:
     - name: MS_BETWEEN_RETRIES
       value: '1800000'
     - name: VAULT_INSTANCE
-      value: PRODUCTION
+      value: GCP
     - name: KAFKA_USER # When fetching on-prem srv password from gcp secret
       value: srveregsplchg
