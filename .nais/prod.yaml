@@ -2,9 +2,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: ereg-splitter-change
-  namespace: teamcrm
+  namespace: team-dialog
   labels:
-    team: teamcrm
+    team: team-dialog
 spec:
   webproxy: true
   image: {{ image }}
@@ -32,15 +32,19 @@ spec:
     requests:
       cpu: 100m
       memory: 8192Mi
-  vault:
-    enabled: true
-    paths:
-      - mountPath: /var/run/secrets/nais.io/vault
-        kvPath: /kv/prod/sbs/ereg-splitter-change/default
-      - mountPath: /var/run/secrets/nais.io/serviceuser
-        kvPath: /serviceuser/data/prod/srveregsplchg
+#  vault:
+#    enabled: true
+#    paths:
+#      - mountPath: /var/run/secrets/nais.io/vault
+#        kvPath: /kv/prod/sbs/ereg-splitter-change/default
+#      - mountPath: /var/run/secrets/nais.io/serviceuser
+#        kvPath: /serviceuser/data/prod/srveregsplchg
+  envFrom:
+    - secret: ereg-splitter-change
+  filesFrom:
+    - secret: ereg-splitter-change
   env:
-    - name: KAFKA_BROKERS
+    - name: KAFKA_BROKERS #ON-PREM
       value: SASL_SSL://a01apvl00145.adeo.no:8443,SASL_SSL://a01apvl00146.adeo.no:8443,SASL_SSL://a01apvl00147.adeo.no:8443,SASL_SSL://a01apvl00148.adeo.no:8443,SASL_SSL://a01apvl00149.adeo.no:8443,SASL_SSL://a01apvl00150.adeo.no:8443
     - name: KAFKA_CLIENTID
       value: ereg-splitter-change
@@ -68,3 +72,5 @@ spec:
       value: '1800000'
     - name: VAULT_INSTANCE
       value: PRODUCTION
+    - name: KAFKA_USER # When fetching on-prem srv password from gcp secret
+      value: srveregsplchg

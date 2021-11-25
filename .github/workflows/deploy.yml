@@ -76,7 +76,7 @@ jobs:
 #          CLUSTER: dev-fss
 #          RESOURCE: .nais/dev.yaml
   deploy-prod:
-    name: Deploy to NAIS prod
+    name: Deploy to prod gcp
     needs: build #deploy-dev
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -85,5 +85,5 @@ jobs:
       - uses: nais/deploy/actions/deploy@v1
         env:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
-          CLUSTER: prod-fss
+          CLUSTER: prod-gcp
           RESOURCE: .nais/prod.yaml
