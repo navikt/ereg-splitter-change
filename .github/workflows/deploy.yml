@@ -3,7 +3,7 @@ name: Build, push, and deploy
 on: [push, pull_request]
 
 env:
-  IMAGE: docker.pkg.github.com/${{ github.repository }}/ereg-splitter-change:${{ github.sha }}
+  IMAGE: ghcr.io/${{ github.repository }}/ereg-splitter-change:${{ github.sha }}
 
 jobs:
   test:
@@ -38,6 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-java@v1
         with:
           java-version: '11.x'

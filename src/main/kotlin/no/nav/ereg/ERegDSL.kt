@@ -132,7 +132,7 @@ internal fun Map<String, Int>.exists(jsonOrgObject: JsonOrgObject): ObjectInCach
         ObjectInCacheStatus.Updated.also {
             if (examples > 0) {
                 examples--
-                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this: ${if (this[jsonOrgObject.orgNo] == 0) "0 (TOMBSTONE)" else this[jsonOrgObject.orgNo]} do not match ${if (jsonOrgObject.hashCode == 0) "0 (TOMBSTONE)" else jsonOrgObject.hashCode}" }
+                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this: ${if (this[jsonOrgObject.orgNo] == 0) "0 (TOMBSTONE)" else this[jsonOrgObject.orgNo].toString()} do not match ${if (jsonOrgObject.hashCode == 0) "0 (TOMBSTONE)" else jsonOrgObject.hashCode.toString()}" }
             }
         }
     else

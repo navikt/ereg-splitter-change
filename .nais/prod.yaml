@@ -43,8 +43,10 @@ spec:
     - secret: ereg-splitter-change
   filesFrom:
     - secret: ereg-splitter-change
+  kafka:
+    pool: nav-prod # enum of nav-dev, nav-prod
   env:
-    - name: KAFKA_BROKERS #ON-PREM
+    - name: KAFKA_BROKERS_ON_PREM
       value: SASL_SSL://a01apvl00145.adeo.no:8443,SASL_SSL://a01apvl00146.adeo.no:8443,SASL_SSL://a01apvl00147.adeo.no:8443,SASL_SSL://a01apvl00148.adeo.no:8443,SASL_SSL://a01apvl00149.adeo.no:8443,SASL_SSL://a01apvl00150.adeo.no:8443
     - name: KAFKA_CLIENTID
       value: ereg-splitter-change

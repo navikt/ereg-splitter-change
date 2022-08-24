@@ -7,6 +7,7 @@ import no.nav.sf.library.AKafkaConsumer
 import no.nav.sf.library.AKafkaProducer
 import no.nav.sf.library.AllRecords
 import no.nav.sf.library.AnEnvironment
+import no.nav.sf.library.KAFKA_LOCAL
 import no.nav.sf.library.Key
 import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
@@ -15,6 +16,7 @@ import no.nav.sf.library.getAllRecords
 import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 
@@ -25,14 +27,32 @@ const val EV_kafkaTopic = "KAFKA_TOPIC"
 
 val kafkaOrgTopic = AnEnvironment.getEnvOrDefault(EV_kafkaTopic, "$PROGNAME-producer")
 
+const val EV_kafkaKeystorePath = "KAFKA_KEYSTORE_PATH"
+const val EV_kafkaCredstorePassword = "KAFKA_CREDSTORE_PASSWORD"
+const val EV_kafkaTruststorePath = "KAFKA_TRUSTSTORE_PATH"
+fun fetchEnv(env: String): String {
+    return AnEnvironment.getEnvOrDefault(env, "$env missing")
+}
+
 data class WorkSettings(
-    val kafkaConsumerOrg: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
+
+    val kafkaConsumerOnPrem: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java
     ),
-    val kafkaProducerOrg: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
+    val kafkaProducerOnPrem: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java
+            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to AnEnvironment.getEnvOrDefault("KAFKA_BROKERS_ON_PREM", KAFKA_LOCAL)
+    ),
+    val kafkaProducerGcp: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
+            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+            "security.protocol" to "SSL",
+            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
+            SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
+            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
+            SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
     )
 )
 
@@ -185,7 +205,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     workMetrics.clearAll()
     ServerState.reset()
 
-    val tmp = Cache.load(ws.kafkaConsumerOrg, kafkaOrgTopic)
+    val tmp = Cache.load(ws.kafkaConsumerOnPrem, kafkaOrgTopic)
     if (tmp is Cache.Missing) {
         log.error { "Could not read cache, leaving" }
         return Pair(ws, ExitReason.NoCache)
@@ -202,7 +222,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     // return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
-            config = ws.kafkaProducerOrg
+            config = ws.kafkaProducerOnPrem
     ).produce {
         listOf(
                 EREGEntity(EREGEntityType.ENHET, eregOEUrl, eregOEAccept),
