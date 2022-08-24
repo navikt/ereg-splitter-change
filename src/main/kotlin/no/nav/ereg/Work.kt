@@ -38,7 +38,8 @@ data class WorkSettings(
 
     val kafkaConsumerOnPrem: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to AnEnvironment.getEnvOrDefault("KAFKA_BROKERS_ON_PREM", KAFKA_LOCAL)
     ),
     val kafkaProducerOnPrem: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
