@@ -228,12 +228,13 @@ internal fun cacheToGcp(ws: WorkSettings) {
                 KafkaConsumerStates.IsFinished
             } else {
                 cacheCount += cRecords.count()
+                log.info { "Cache run consumed ${cRecords.count()}" }
                 cRecords.forEach {
                     if (it.value() == null) {
                         cacheCountTombstones.inc()
-                        if (sendNullValue(kafkaCacheTopicGcp, it.key())) { publishCountTombstones++ ; publishCount++ }
+                        if (sendNullValue(kafkaCacheTopicGcp, it.key())) { publishCountTombstones++ ; publishCount++ } else { log.error { "Fault in cache producer send tombstone" } }
                     } else {
-                        if (send(kafkaCacheTopicGcp, it.key(), it.value()!!)) publishCount++
+                        if (send(kafkaCacheTopicGcp, it.key(), it.value()!!)) publishCount++ else { log.error { "Fault in cache producer send org" } }
                     }
                 }
                 KafkaConsumerStates.IsOk
