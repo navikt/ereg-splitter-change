@@ -26,7 +26,7 @@ object Bootstrap {
     fun start(ws: WorkSettings = WorkSettings()) {
         log.info { "Starting" }
         enableNAISAPI {
-            cacheToGcp(ws)
+            // cacheToGcp(ws)
             loop(ws)
         }
         log.info { "Finished!" }
@@ -38,12 +38,11 @@ object Bootstrap {
         when {
             stop -> Unit
             !stop -> {
-                /*
+
                 log.info { "Continue to loop" }
 
                 Metrics.sessionReset()
                 val result = work(ws)
-
 
                 if (result.second.isOK()) {
                     val delay = if (bootstrapRunEachMorning) getTomorrowMorning() else 1_000
@@ -58,10 +57,9 @@ object Bootstrap {
                     }
                 }
 
-                 */
-                val delay = if (bootstrapRunEachMorning) getTomorrowMorning() else 1_000
-                conditionalWait(delay)
-                loop(ws)
+//                val delay = if (bootstrapRunEachMorning) getTomorrowMorning() else 1_000
+//                conditionalWait(delay)
+//                loop(ws)
             }
         }
     }
