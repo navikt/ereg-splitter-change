@@ -8,6 +8,7 @@ import no.nav.sf.library.AKafkaProducer
 import no.nav.sf.library.AllRecords
 import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.KAFKA_LOCAL
+import no.nav.sf.library.KafkaConsumerStates
 import no.nav.sf.library.Key
 import no.nav.sf.library.PROGNAME
 import no.nav.sf.library.ShutdownHook
@@ -26,6 +27,7 @@ private val log = KotlinLogging.logger {}
 const val EV_kafkaTopic = "KAFKA_TOPIC"
 
 val kafkaOrgTopic = AnEnvironment.getEnvOrDefault(EV_kafkaTopic, "$PROGNAME-producer")
+val kafkaCacheTopicGcp = "team-dialog.ereg-cache"
 
 const val EV_kafkaKeystorePath = "KAFKA_KEYSTORE_PATH"
 const val EV_kafkaCredstorePassword = "KAFKA_CREDSTORE_PASSWORD"
@@ -45,6 +47,15 @@ data class WorkSettings(
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to AnEnvironment.getEnvOrDefault("KAFKA_BROKERS_ON_PREM", KAFKA_LOCAL)
+    ),
+    val kafkaConsumerGcp: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
+            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+            "security.protocol" to "SSL",
+            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
+            SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
+            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
+            SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
     ),
     val kafkaProducerGcp: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
@@ -199,8 +210,40 @@ val workMetrics = WMetrics()
 
 val ignoreCache = false
 var examples = 0
-internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
+internal fun cacheToGcp(ws: WorkSettings) {
+    log.info { "cache to gcp run starting" }
+
+    var cacheCount = 0
+    var cacheCountTombstones = 0
+
+    var publishCount = 0
+    var publishCountTombstones = 0
+    AKafkaProducer<ByteArray, ByteArray>(
+        config = ws.kafkaProducerGcp
+    ).produce {
+        AKafkaConsumer<ByteArray, ByteArray?>(config = ws.kafkaConsumerOnPrem, fromBeginning = true).consume { cRecords ->
+            if (cRecords.isEmpty()) {
+                log.info { "Found no more records from cache - finished" }
+                KafkaConsumerStates.IsFinished
+            } else {
+                cacheCount += cRecords.count()
+                cRecords.forEach {
+                    if (it.value() == null) {
+                        cacheCountTombstones.inc()
+                        if (sendNullValue(kafkaCacheTopicGcp, it.key())) { publishCountTombstones++ ; publishCount++ }
+                    } else {
+                        if (send(kafkaCacheTopicGcp, it.key(), it.value()!!)) publishCount++
+                    }
+                }
+                KafkaConsumerStates.IsOk
+            }
+        }
+    }
+    log.info { "cache to gcp run finished - cacheCount $cacheCount (tombstones $cacheCountTombstones), publishCount $publishCount (tombstones $publishCountTombstones)" }
+}
+
+internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     log.info { "bootstrap work session starting" }
 
     workMetrics.clearAll()
