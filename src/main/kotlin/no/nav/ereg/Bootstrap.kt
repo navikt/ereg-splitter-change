@@ -26,7 +26,7 @@ object Bootstrap {
     fun start(ws: WorkSettings = WorkSettings()) {
         log.info { "Starting" }
         enableNAISAPI {
-            // cacheToGcp(ws)
+            cacheToGcp(ws)
             loop(ws)
         }
         log.info { "Finished!" }
@@ -69,7 +69,7 @@ object Bootstrap {
         LocalDateTime.parse(LocalDate.now().plusDays(1).toString() + "T05:30:00"))
         .toMillis()
 
-    private fun conditionalWait(ms: Long) =
+    fun conditionalWait(ms: Long) =
         runBlocking {
             log.info { "Will wait $ms ms before starting all over" }
 

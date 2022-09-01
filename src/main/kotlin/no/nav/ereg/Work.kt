@@ -214,6 +214,8 @@ var examples = 0
 internal fun cacheToGcp(ws: WorkSettings) {
     log.info { "cache to gcp run starting" }
 
+    var hasAccessedCache = false
+
     var cacheCount = 0
     var cacheCountTombstones = 0
 
@@ -224,11 +226,18 @@ internal fun cacheToGcp(ws: WorkSettings) {
     ).produce {
         AKafkaConsumer<ByteArray, ByteArray?>(config = ws.kafkaConsumerOnPrem, fromBeginning = true).consume { cRecords ->
             if (cRecords.isEmpty()) {
-                log.info { "Found no more records from cache - finished" }
-                KafkaConsumerStates.IsFinished
+                log.info { "CACHE Found no more records from cache - finished" }
+                if (hasAccessedCache) {
+                    KafkaConsumerStates.IsFinished
+                } else {
+                    log.info { "CACHE Expect to access records from cache will wait a minute and try again" }
+                    Bootstrap.conditionalWait(60000)
+                    KafkaConsumerStates.IsOk
+                }
             } else {
+                hasAccessedCache = true
                 cacheCount += cRecords.count()
-                log.info { "Cache run consumed ${cRecords.count()}" }
+                log.info { "CACHE run consumed ${cRecords.count()}" }
                 cRecords.forEach {
                     if (it.value() == null) {
                         cacheCountTombstones.inc()
