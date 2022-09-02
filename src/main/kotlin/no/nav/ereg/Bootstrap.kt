@@ -26,7 +26,7 @@ object Bootstrap {
     fun start(ws: WorkSettings = WorkSettings()) {
         log.info { "Starting" }
         enableNAISAPI {
-            cacheToGcp(ws)
+            // cacheToGcp(ws)
             loop(ws)
         }
         log.info { "Finished!" }

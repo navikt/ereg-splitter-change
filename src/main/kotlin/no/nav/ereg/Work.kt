@@ -27,7 +27,7 @@ private val log = KotlinLogging.logger {}
 const val EV_kafkaTopic = "KAFKA_TOPIC"
 
 val kafkaOrgTopic = AnEnvironment.getEnvOrDefault(EV_kafkaTopic, "$PROGNAME-producer")
-val kafkaCacheTopicGcp = "team-dialog.ereg-cache"
+val kafkaCacheTopicGcp = "team-dialog.ereg-cache" // same as above now
 
 const val EV_kafkaKeystorePath = "KAFKA_KEYSTORE_PATH"
 const val EV_kafkaCredstorePassword = "KAFKA_CREDSTORE_PASSWORD"
@@ -259,7 +259,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     workMetrics.clearAll()
     ServerState.reset()
 
-    val tmp = Cache.load(ws.kafkaConsumerOnPrem, kafkaOrgTopic)
+    val tmp = Cache.load(ws.kafkaConsumerGcp, kafkaOrgTopic)
     if (tmp is Cache.Missing) {
         log.error { "Could not read cache, leaving" }
         return Pair(ws, ExitReason.NoCache)
@@ -276,7 +276,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     // return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
-            config = ws.kafkaProducerOnPrem
+            config = ws.kafkaProducerGcp
     ).produce {
         listOf(
                 EREGEntity(EREGEntityType.ENHET, eregOEUrl, eregOEAccept),

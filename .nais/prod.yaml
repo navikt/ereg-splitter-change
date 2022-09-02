@@ -56,8 +56,8 @@ spec:
       value: SASL_SSL
     - name: KAFKA_SASLMEC
       value: PLAIN
-    - name: KAFKA_TOPIC
-      value: public-ereg-cache-org-json
+    - name: KAFKA_TOPIC  #onprem: public-ereg-cache-org-json
+      value: team-dialog.ereg-cache
     - name: EREG_UEURL
       value: 'https://data.brreg.no/enhetsregisteret/api/underenheter/lastned'
     - name: EREG_UEACCEPT
