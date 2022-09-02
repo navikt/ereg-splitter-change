@@ -85,6 +85,8 @@ sealed class Cache {
 
     companion object {
         fun load(kafkaConsumerConfig: Map<String, Any>, topic: String): Cache = kotlin.runCatching {
+            log.info { "Attempting load cache from topic $topic." }
+            log.info { "Attempting load cache from config $kafkaConsumerConfig" }
             when (val result = getAllRecords<ByteArray, ByteArray>(kafkaConsumerConfig, listOf(topic))) {
                 is AllRecords.Exist -> {
                     when {
