@@ -38,6 +38,10 @@ spec:
 #        kvPath: /kv/prod/sbs/ereg-splitter-change/default
 #      - mountPath: /var/run/secrets/nais.io/serviceuser
 #        kvPath: /serviceuser/data/prod/srveregsplchg
+  accessPolicy:
+    outbound:
+      external:
+        - host: data.brreg.no
   envFrom:
     - secret: ereg-splitter-change
   filesFrom:
