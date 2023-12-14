@@ -1,13 +1,8 @@
 package no.nav.ereg
 
-import java.io.ByteArrayInputStream
-import java.io.InputStreamReader
-import java.lang.StringBuilder
-import java.net.URI
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
-import no.nav.sf.library.AnEnvironment
 import org.apache.http.HttpHost
 import org.apache.http.client.config.CookieSpecs
 import org.apache.http.client.config.RequestConfig
@@ -19,6 +14,10 @@ import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.filter.gunzipped
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
+import java.lang.StringBuilder
+import java.net.URI
 
 private val log = KotlinLogging.logger {}
 
@@ -29,12 +28,12 @@ const val EV_eregOEAccept = "EREG_OEACCEPT"
 
 const val EV_httpsProxy = "HTTPS_PROXY"
 
-val eregUEUrl = AnEnvironment.getEnvOrDefault(EV_eregUEUrl, "")
-val eregUEAccept = AnEnvironment.getEnvOrDefault(EV_eregUEAccept, "")
-val eregOEUrl = AnEnvironment.getEnvOrDefault(EV_eregOEUrl, "")
-val eregOEAccept = AnEnvironment.getEnvOrDefault(EV_eregOEAccept, "")
+val eregUEUrl = getEnvOrDefault(EV_eregUEUrl, "")
+val eregUEAccept = getEnvOrDefault(EV_eregUEAccept, "")
+val eregOEUrl = getEnvOrDefault(EV_eregOEUrl, "")
+val eregOEAccept = getEnvOrDefault(EV_eregOEAccept, "")
 
-val httpsProxy: String = AnEnvironment.getEnvOrDefault(EV_httpsProxy, "")
+val httpsProxy: String = getEnvOrDefault(EV_httpsProxy, "")
 
 data class EREGEntity(
     val type: EREGEntityType,
@@ -62,15 +61,17 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
 
     val hp = httpsProxy
     val apacheHttpClient = if (hp.isNotEmpty()) {
-        ApacheClient(client =
-            HttpClients.custom()
-                .setDefaultRequestConfig(
-                    RequestConfig.custom()
-                        .setProxy(HttpHost(URI(hp).host, URI(hp).port, URI(hp).scheme))
-                        .setRedirectsEnabled(false)
-                        .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
-                        .build())
-                .build(),
+        ApacheClient(
+            client =
+                HttpClients.custom()
+                    .setDefaultRequestConfig(
+                        RequestConfig.custom()
+                            .setProxy(HttpHost(URI(hp).host, URI(hp).port, URI(hp).scheme))
+                            .setRedirectsEnabled(false)
+                            .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
+                            .build()
+                    )
+                    .build(),
             responseBodyMode = BodyMode.Stream
         )
     } else ApacheClient(responseBodyMode = BodyMode.Stream)
@@ -83,7 +84,8 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
                 log.info { "${eregEntity.type}, successful response" }
 
                 val streamAvailable = try {
-                    Pair(true,
+                    Pair(
+                        true,
                         response
                             .body
                             .gunzipped().also {
@@ -99,10 +101,10 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
                 }
                 if (streamAvailable.first)
                     InputStreamReader(streamAvailable.second)
-                    .use {
-                        doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
-                        log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
-                    }
+                        .use {
+                            doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
+                            log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
+                        }
             } else {
                 Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
                 ServerState.state = ServerStates.EregIssues
@@ -188,13 +190,13 @@ internal data class JsonOrgObject(
 internal fun JsonOrgObject.isOk() = this.streamState == StreamState.STREAM_ONGOING && this.orgNo.isNotEmpty()
 
 internal fun JsonOrgObject.addHashCode(): JsonOrgObject = this.json.hashCode().let { hashCode ->
-        JsonOrgObject(
-            this.streamState,
-            this.json,
-            this.orgNo,
-            hashCode
-        )
-    }
+    JsonOrgObject(
+        this.streamState,
+        this.json,
+        this.orgNo,
+        hashCode
+    )
+}
 
 internal fun JsonOrgObject.toKafkaPayload(eregType: EREGEntityType): KafkaPayload<ByteArray, ByteArray> =
     KafkaPayload(

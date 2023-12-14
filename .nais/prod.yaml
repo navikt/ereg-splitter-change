@@ -31,13 +31,6 @@ spec:
     requests:
       cpu: 100m
       memory: 3Gi
-#  vault:
-#    enabled: true
-#    paths:
-#      - mountPath: /var/run/secrets/nais.io/vault
-#        kvPath: /kv/prod/sbs/ereg-splitter-change/default
-#      - mountPath: /var/run/secrets/nais.io/serviceuser
-#        kvPath: /serviceuser/data/prod/srveregsplchg
   accessPolicy:
     outbound:
       external:
@@ -79,3 +72,5 @@ spec:
       value: GCP
     - name: KAFKA_USER # When fetching on-prem srv password from gcp secret
       value: srveregsplchg
+    - name: KAFKA_POLL_DURATION
+      value: '10000'

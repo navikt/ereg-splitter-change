@@ -2,19 +2,15 @@ package no.nav.ereg
 
 import io.prometheus.client.Gauge
 import mu.KotlinLogging
+import no.nav.ereg.kafka.AKafkaConsumer
+import no.nav.ereg.kafka.AKafkaProducer
+import no.nav.ereg.kafka.AllRecords
+import no.nav.ereg.kafka.KafkaConsumerStates
+import no.nav.ereg.kafka.Key
+import no.nav.ereg.kafka.Value
+import no.nav.ereg.kafka.getAllRecords
+import no.nav.ereg.kafka.sendNullValue
 import no.nav.ereg.proto.EregOrganisationEventKey
-import no.nav.sf.library.AKafkaConsumer
-import no.nav.sf.library.AKafkaProducer
-import no.nav.sf.library.AllRecords
-import no.nav.sf.library.AnEnvironment
-import no.nav.sf.library.KAFKA_LOCAL
-import no.nav.sf.library.KafkaConsumerStates
-import no.nav.sf.library.Key
-import no.nav.sf.library.PROGNAME
-import no.nav.sf.library.ShutdownHook
-import no.nav.sf.library.Value
-import no.nav.sf.library.getAllRecords
-import no.nav.sf.library.sendNullValue
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SslConfigs
@@ -26,45 +22,45 @@ private val log = KotlinLogging.logger {}
 // Work environment dependencies
 const val EV_kafkaTopic = "KAFKA_TOPIC"
 
-val kafkaOrgTopic = AnEnvironment.getEnvOrDefault(EV_kafkaTopic, "$PROGNAME-producer")
+val kafkaOrgTopic = getEnvOrDefault(EV_kafkaTopic, "topic not set")
 val kafkaCacheTopicGcp = "team-dialog.ereg-cache" // same as above now
 
 const val EV_kafkaKeystorePath = "KAFKA_KEYSTORE_PATH"
 const val EV_kafkaCredstorePassword = "KAFKA_CREDSTORE_PASSWORD"
 const val EV_kafkaTruststorePath = "KAFKA_TRUSTSTORE_PATH"
 fun fetchEnv(env: String): String {
-    return AnEnvironment.getEnvOrDefault(env, "$env missing")
+    return getEnvOrDefault(env, "$env missing")
 }
 
 data class WorkSettings(
 
     val kafkaConsumerOnPrem: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to AnEnvironment.getEnvOrDefault("KAFKA_BROKERS_ON_PREM", KAFKA_LOCAL)
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL")
     ),
     val kafkaProducerOnPrem: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to AnEnvironment.getEnvOrDefault("KAFKA_BROKERS_ON_PREM", KAFKA_LOCAL)
+        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL")
     ),
     val kafkaConsumerGcp: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-            "security.protocol" to "SSL",
-            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
-            SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
-            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
-            SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+        "security.protocol" to "SSL",
+        SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
+        SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
+        SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
+        SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
     ),
     val kafkaProducerGcp: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-            "security.protocol" to "SSL",
-            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
-            SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
-            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
-            SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
+        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+        "security.protocol" to "SSL",
+        SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
+        SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
+        SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
+        SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
     )
 )
 
@@ -90,28 +86,26 @@ sealed class Cache {
             when (val result = getAllRecords<ByteArray, ByteArray>(kafkaConsumerConfig, listOf(topic))) {
                 is AllRecords.Exist -> {
                     when {
-                        result.hasMissingKey() -> Missing
+                        result.hasMissingKey() ->
+                            Missing
                                 .also { log.error { "Cache has null in key" } }
-                        // result.hasMissingValue() -> {
-                        //    Missing
-                        //        .also { log.error { "Cache has null in value" } }
-                        // }
                         else -> {
                             val enheter: MutableMap<String, Int> = mutableMapOf()
                             val underenheter: MutableMap<String, Int> = mutableMapOf()
                             result.getKeysValues().map {
                                 val key = it.k.protobufSafeParseKey()
                                 Triple<String, EREGEntityType, Int>(
-                                        key.orgNumber,
-                                        EREGEntityType.valueOf(key.orgType.toString()),
-                                        it.v.protobufSafeParseValue().jsonHashCode)
+                                    key.orgNumber,
+                                    EREGEntityType.valueOf(key.orgType.toString()),
+                                    it.v.protobufSafeParseValue().jsonHashCode
+                                )
                             }
-                                    .filter { it.first.isNotEmpty() }
-                                    .groupBy { it.second }
-                                    .let { tmp ->
-                                        tmp[EREGEntityType.ENHET]?.let { list -> enheter.putAll(list.map { tri -> tri.first to tri.third }) }
-                                        tmp[EREGEntityType.UNDERENHET]?.let { list -> underenheter.putAll(list.map { tri -> tri.first to tri.third }) }
-                                    }
+                                .filter { it.first.isNotEmpty() }
+                                .groupBy { it.second }
+                                .let { tmp ->
+                                    tmp[EREGEntityType.ENHET]?.let { list -> enheter.putAll(list.map { tri -> tri.first to tri.third }) }
+                                    tmp[EREGEntityType.UNDERENHET]?.let { list -> underenheter.putAll(list.map { tri -> tri.first to tri.third }) }
+                                }
                             Metrics.cachedOrgNoHashCode.labels(EREGEntityType.ENHET.toString()).inc(enheter.size.toDouble())
                             Metrics.cachedOrgNoHashCode.labels(EREGEntityType.UNDERENHET.toString()).inc(underenheter.size.toDouble())
                             val tombstones: MutableSet<String> = mutableSetOf()
@@ -154,8 +148,9 @@ sealed class Cache {
 
                             log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
 
-                            log.info { "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET," +
-                            " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET," +
+                            log.info {
+                                "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET," +
+                                    " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET," +
                                     " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} TOMB ENHET," +
                                     " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} TOMB UNDERENHET" +
                                     " ${m.filter{it.key != null && it.value == null}.count()} TOMBSTONES TOTAL"
@@ -168,8 +163,8 @@ sealed class Cache {
                 else -> Missing
             }
         }
-                .onFailure { log.error { "Error building Cache - ${it.message}" } }
-                .getOrDefault(Invalid)
+            .onFailure { log.error { "Error building Cache - ${it.message}" } }
+            .getOrDefault(Invalid)
     }
 }
 
@@ -184,10 +179,10 @@ sealed class ExitReason {
 
 data class WMetrics(
     val sizeOfCache: Gauge = Gauge
-            .build()
-            .name("size_of_cache")
-            .help("Size of ereg cache")
-            .register(),
+        .build()
+        .name("size_of_cache")
+        .help("Size of ereg cache")
+        .register(),
     val numberOfPublishedOrgs: Gauge = Gauge
         .build()
         .name("number_of_published_orgs")
@@ -195,10 +190,10 @@ data class WMetrics(
         .register(),
 
     val publishedTombstones: Gauge = Gauge
-            .build()
-            .name("published_tombstones")
-            .help("Number of published tombstones")
-            .register()
+        .build()
+        .name("published_tombstones")
+        .help("Number of published tombstones")
+        .register()
 ) {
 
     fun clearAll() {
@@ -278,14 +273,14 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     // return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
-            config = ws.kafkaProducerGcp
+        config = ws.kafkaProducerGcp
     ).produce {
         listOf(
-                EREGEntity(EREGEntityType.ENHET, eregOEUrl, eregOEAccept),
-                EREGEntity(EREGEntityType.UNDERENHET, eregUEUrl, eregUEAccept)
+            EREGEntity(EREGEntityType.ENHET, eregOEUrl, eregOEAccept),
+            EREGEntity(EREGEntityType.UNDERENHET, eregUEUrl, eregUEAccept)
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
-            if (!ShutdownHook.isActive() && ServerState.isOk()) {
+            if (ServerState.isOk()) {
                 eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
                     if (ServerState.isOk()) {
                         log.info { "${eregEntity.type}, got sequence iterator and server state ok, publishing changes to kafka" }
@@ -322,10 +317,10 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
     log.info {
         "Finished work session. Number of already existing: ${cacheFileStatusMap.values.count { it == FileStatus.SAME}}" +
-                ", updated: ${cacheFileStatusMap.values.count { it == FileStatus.UPDATED }}" +
-                ", new: ${cacheFileStatusMap.values.count { it == FileStatus.NEW }}" +
-                ", not present (new tombstones): ${cacheFileStatusMap.values.count { it == FileStatus.NOT_PRESENT }}" +
-                ", server state ok? ${ServerState.isOk()}"
+            ", updated: ${cacheFileStatusMap.values.count { it == FileStatus.UPDATED }}" +
+            ", new: ${cacheFileStatusMap.values.count { it == FileStatus.NEW }}" +
+            ", not present (new tombstones): ${cacheFileStatusMap.values.count { it == FileStatus.NOT_PRESENT }}" +
+            ", server state ok? ${ServerState.isOk()}"
     }
 
     cacheFileStatusMap.clear() // Free memory

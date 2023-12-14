@@ -9,6 +9,8 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 private val log = KotlinLogging.logger {}
 
+fun getEnvOrDefault(env: String, defaultValue: String): String = System.getenv(env) ?: defaultValue
+
 internal fun ByteArray.protobufSafeParseKey(): EregOrganisationEventKey = this.let { ba ->
     try {
         EregOrganisationEventKey.parseFrom(ba)

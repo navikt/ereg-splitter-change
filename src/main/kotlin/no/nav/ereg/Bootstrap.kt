@@ -1,23 +1,22 @@
 package no.nav.ereg
 
-import java.time.Duration
-import java.time.LocalDate
-import java.time.LocalDateTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import no.nav.sf.library.AnEnvironment
-import no.nav.sf.library.PrestopHook
-import no.nav.sf.library.enableNAISAPI
+import no.nav.ereg.nais.PrestopHook
+import no.nav.ereg.nais.enableNAISAPI
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 private const val EV_bootstrapRetryWaitTime = "MS_BETWEEN_RETRIES"
 private const val EV_bootstrapRunEachMorning = "RUN_EACH_MORNING"
 private const val EV_bootstrapMaxAttempts = "MAX_ATTEMPTS"
 
-private val bootstrapRetryWaitTime = AnEnvironment.getEnvOrDefault(EV_bootstrapRetryWaitTime, "1800000").toLong()
-private val bootstrapRunEachMorning = AnEnvironment.getEnvOrDefault(EV_bootstrapRunEachMorning, "FALSE") == "TRUE"
-private val bootstrapMaxAttempts = AnEnvironment.getEnvOrDefault(EV_bootstrapMaxAttempts, "24").toInt()
+private val bootstrapRetryWaitTime = getEnvOrDefault(EV_bootstrapRetryWaitTime, "1800000").toLong()
+private val bootstrapRunEachMorning = getEnvOrDefault(EV_bootstrapRunEachMorning, "FALSE") == "TRUE"
+private val bootstrapMaxAttempts = getEnvOrDefault(EV_bootstrapMaxAttempts, "24").toInt()
 
 object Bootstrap {
 
@@ -26,7 +25,6 @@ object Bootstrap {
     fun start(ws: WorkSettings = WorkSettings()) {
         log.info { "Starting" }
         enableNAISAPI {
-            // cacheToGcp(ws)
             loop(ws)
         }
         log.info { "Finished!" }
@@ -34,7 +32,7 @@ object Bootstrap {
 
     private tailrec fun loop(ws: WorkSettings) {
         log.info { "Ready to loop" }
-        val stop = no.nav.sf.library.ShutdownHook.isActive() || PrestopHook.isActive()
+        val stop = PrestopHook.isActive()
         when {
             stop -> Unit
             !stop -> {
@@ -56,17 +54,14 @@ object Bootstrap {
                         loop(result.first)
                     }
                 }
-
-//                val delay = if (bootstrapRunEachMorning) getTomorrowMorning() else 1_000
-//                conditionalWait(delay)
-//                loop(ws)
             }
         }
     }
 
     private fun getTomorrowMorning() = Duration.between(
         LocalDateTime.now(),
-        LocalDateTime.parse(LocalDate.now().plusDays(1).toString() + "T05:30:00"))
+        LocalDateTime.parse(LocalDate.now().plusDays(1).toString() + "T05:30:00")
+    )
         .toMillis()
 
     fun conditionalWait(ms: Long) =
@@ -81,7 +76,7 @@ object Bootstrap {
 
             tailrec suspend fun loop(): Unit = when {
                 cr.isCompleted -> Unit
-                no.nav.sf.library.ShutdownHook.isActive() || PrestopHook.isActive() -> cr.cancel()
+                PrestopHook.isActive() -> cr.cancel()
                 else -> {
                     delay(250L)
                     loop()

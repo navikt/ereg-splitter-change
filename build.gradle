@@ -1,33 +1,13 @@
-buildscript {
-    ext.kotlin_version = '1.3.61'
-    ext.kotlin_coroutine = '1.3.3'
-    ext.http4k_version = '3.217.0'
-    ext.kafka_version = '2.3.1'
-    ext.embedded_kafka = '2.3.0'
-    ext.grpc_version = '1.26.0'
-    ext.javax_annotation_version = '1.3.2'
-    ext.kotlin_loggin_version = '1.7.8'
-    ext.logback_version = '1.2.3'
-    ext.log4j_version = '1.7.25'
-    ext.logstash_encoder_version = '6.3'
-    ext.prometheus_version = '0.8.0'
-    ext.junit5_version = '3.4.2'
-
-    ext.crm_utilities_version = '0.102'
-}
-
 plugins {
     id 'application'
-    id 'idea'
-    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.21' //1.6.21
     id 'com.google.protobuf' version '0.8.11'
-    id 'org.jmailen.kotlinter' version '2.2.0'
-    id 'com.github.ben-manes.versions' version '0.27.0'
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'org.jmailen.kotlinter' version '3.0.0'
+    id 'com.github.johnrengelman.shadow' version '8.0.0'
 }
 
 group 'no.nav.ereg'
-version '0.6'
+version '0.7'
 
 jar {
     manifest {
@@ -48,30 +28,14 @@ tasks.withType(JavaExec) {
     jvmArgs = ['-Xms4096m', '-Xmx8192m']
 }
 
-run {
-    environment "KAFKA_BROKERS", "localhost:9092"
-    environment "KAFKA_CLIENTID", "ereg_splitter_change"
-    environment "KAFKA_SECURITY", "FALSE"
-    environment "KAFKA_TOPIC", "public-ereg-cache-org-json"
-    environment "EREG_UEURL", "https://data.brreg.no/enhetsregisteret/api/underenheter/lastned"
-    environment "EREG_UEACCEPT", "application/vnd.brreg.enhetsregisteret.underenhet.v1+gzip;charset=UTF-8"
-    environment "EREG_OEURL", "https://data.brreg.no/enhetsregisteret/api/enheter/lastned"
-    environment "EREG_OEACCEPT", "application/vnd.brreg.enhetsregisteret.enhet.v1+gzip;charset=UTF-8"
-    environment "HTTPS_PROXY", ""
-
-    environment "RUN_EACH_MORNING", "FALSE"
-    environment "MAX_ATTEMPTS", "3"
-    environment "MS_BETWEEN_RETRIES", "40000"
-}
-
 repositories {
     mavenCentral()
     jcenter()
     maven {
-        url "http://packages.confluent.io/maven"
+        url "https://packages.confluent.io/maven"
     }
 
-    ["maven-release", "crm-utilities"].each { repo ->
+    ["maven-release"].each { repo ->
         String token = System.getenv("GITHUB_TOKEN") ?: project.findProperty("githubPassword")
         if (!token) throw new NullPointerException("Missing token, you have to set GITHUB_TOKEN or githubPassword")
         maven {
@@ -90,32 +54,29 @@ configurations {
 
 
 dependencies {
-    implementation "no.nav.sf.library:crm-utilities:$crm_utilities_version"
+    implementation 'com.google.code.gson:gson:2.10'
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_coroutine"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.5"
 
-    implementation "org.http4k:http4k-core:$http4k_version"
-    //implementation "org.http4k:http4k-server-jetty:$http4k_version"
-    implementation "org.http4k:http4k-server-netty:$http4k_version"
-    implementation "org.http4k:http4k-client-apache:$http4k_version"
+    implementation "org.http4k:http4k-server-apache:3.251.0"
+    implementation "org.http4k:http4k-client-apache:3.251.0"
 
-    implementation "org.apache.kafka:kafka-clients:$kafka_version"
+    implementation "org.apache.kafka:kafka-clients:7.5.1-ce"
 
-    implementation "io.grpc:grpc-protobuf:${grpc_version}"
-    implementation "io.grpc:grpc-stub:${grpc_version}"
-    compileOnly "javax.annotation:javax.annotation-api:$javax_annotation_version"
+    implementation "io.grpc:grpc-protobuf:1.60.0"
+    implementation "io.grpc:grpc-stub:1.60.0"
 
-    implementation "io.github.microutils:kotlin-logging:$kotlin_loggin_version"
-    implementation "ch.qos.logback:logback-classic:$logback_version"
-    implementation "net.logstash.logback:logstash-logback-encoder:$logstash_encoder_version"
-    //implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation "io.github.microutils:kotlin-logging:1.7.9"
+    implementation "ch.qos.logback:logback-classic:1.4.14"
+    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 
-    implementation "io.prometheus:simpleclient_common:$prometheus_version"
-    implementation "io.prometheus:simpleclient_hotspot:$prometheus_version"
+    implementation "io.prometheus:simpleclient_common:0.8.1"
+    implementation "io.prometheus:simpleclient_hotspot:0.8.1"
 
-    testImplementation "io.kotlintest:kotlintest-runner-junit5:$junit5_version"
-    testImplementation "no.nav:kafka-embedded-env:$embedded_kafka"
+    implementation "org.apache.commons:commons-compress:1.24.0" //transient http4k-apache
+    implementation "org.apache.httpcomponents:httpclient:4.5.13" //Desired transient httpclient to http4k-apache
+    implementation "org.xerial.snappy:snappy-java:1.1.10.4" //Desired transient snappy to kafka-clients above
+    implementation "org.apache.avro:avro:1.11.3" //Desired transient avro to serializer above
 }
 
 test {
@@ -130,11 +91,19 @@ sourceSets {
 protobuf {
     protoc { artifact = 'com.google.protobuf:protoc:3.11.0' }
     plugins {
-        grpc { artifact = "io.grpc:protoc-gen-grpc-java:$grpc_version" }
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.60.0" }
     }
     generateProtoTasks {
         all()*.plugins { grpc {} }
     }
+}
+
+processResources.dependsOn {
+    extractProto
+}
+
+processTestResources.dependsOn {
+    extractTestProto
 }
 
 compileKotlin {

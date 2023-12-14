@@ -39,7 +39,5 @@ message EregOrganisationEventValue {
 ./gradlew clean build installDist
 ```
 
-## Contact us
-[Torstein Nesby](mailto://torstein.nesby@nav.no)
 
 For internal resources, send request/questions to slack #crm-plattform-team 
