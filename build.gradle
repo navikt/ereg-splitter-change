@@ -52,7 +52,6 @@ configurations {
     all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 }
 
-
 dependencies {
     implementation 'com.google.code.gson:gson:2.10'
 
