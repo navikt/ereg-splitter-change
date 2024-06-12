@@ -61,6 +61,9 @@ jobs:
   deploy-prod:
     name: Deploy to prod gcp
     needs: build #deploy-dev
+    permissions:
+      id-token: write
+      contents: read
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
