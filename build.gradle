@@ -1,6 +1,6 @@
 plugins {
     id 'application'
-    id 'org.jetbrains.kotlin.jvm' version '1.6.21' //1.6.21
+    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
     id 'com.google.protobuf' version '0.8.11'
     id 'org.jmailen.kotlinter' version '3.0.0'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
@@ -25,7 +25,7 @@ application {
 }
 
 tasks.withType(JavaExec) {
-    jvmArgs = ['-Xms4096m', '-Xmx8192m']
+    jvmArgs = ['-Xms1024m', '-Xmx8192m']
 }
 
 repositories {
@@ -85,6 +85,7 @@ test {
 sourceSets {
     main.kotlin.srcDirs += 'src/main/kotlin'
     test.kotlin.srcDirs += 'src/test/kotlin'
+    main.java.srcDirs += 'build/generated/source/proto/main/java'
 }
 
 protobuf {
@@ -105,9 +106,11 @@ processTestResources.dependsOn {
     extractTestProto
 }
 
-compileKotlin {
-    kotlinOptions.jvmTarget = "11"
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+    kotlinOptions.jvmTarget = "17"
 }
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "11"
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
 }
