@@ -24,10 +24,6 @@ application {
     mainClassName = 'no.nav.ereg.MainKt'
 }
 
-tasks.withType(JavaExec) {
-    jvmArgs = ['-Xms1024m', '-Xmx8192m']
-}
-
 repositories {
     mavenCentral()
     jcenter()
