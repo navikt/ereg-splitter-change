@@ -369,6 +369,9 @@ class AKafkaProducer<K, V>(
         val configBase: Map<String, Any>
             get() = mapOf<String, Any>(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to env(env_KAFKA_BROKERS),
+                ProducerConfig.BATCH_SIZE_CONFIG to 1024 * 1024, // 1 MB batch size
+                ProducerConfig.BUFFER_MEMORY_CONFIG to 512 * 1024 * 1024, // 512 MB buffer
+                ProducerConfig.MAX_REQUEST_SIZE_CONFIG to 10 * 1024 * 1024, // 10 M
                 CommonClientConfigs.SECURITY_PROTOCOL_CONFIG to "SSL",
                 SaslConfigs.SASL_MECHANISM to "PLAIN",
                 SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to env(env_KAFKA_KEYSTORE_PATH),
