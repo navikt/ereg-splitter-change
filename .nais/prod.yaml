@@ -32,10 +32,10 @@ spec:
         - id: loki
   resources:
     limits:
-      memory: 9Gi
+      memory: 20Gi
     requests:
       cpu: 10m
-      memory: 3Gi
+      memory: 10Gi
   accessPolicy:
     outbound:
       external:
