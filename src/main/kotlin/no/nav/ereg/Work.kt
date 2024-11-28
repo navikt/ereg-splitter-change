@@ -281,18 +281,24 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
             if (ServerState.isOk()) {
-                eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
-                    if (ServerState.isOk()) {
-                        log.info { "${eregEntity.type}, got sequence iterator and server state ok, publishing changes to kafka" }
-                        publishIterator(seqIter, kafkaOrgTopic)
-                            .also { noOfEvents ->
-                                log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
-                                workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
-                            }
-                    } else {
-                        log.error { "Skipping ${eregEntity.type} due to server state issue ${ServerState.state.javaClass.name}" }
-                    }
-                } // end of use for InputStreamReader - AutoCloseable
+                cache.map.entries.chunked(10_000).forEach { chunk ->
+                    log.info { "Processing chunk of size ${chunk.size} for ${eregEntity.type} (total size ${cache.map.size})" }
+
+                    val subCache = chunk.associate { it.key to it.value }
+
+                    eregEntity.getJsonAsSequenceIterator(subCache) { seqIter ->
+                        if (ServerState.isOk()) {
+                            log.info { "${eregEntity.type}, got sequence iterator for chunk and server state ok, publishing changes to kafka" }
+                            publishIterator(seqIter, kafkaOrgTopic)
+                                .also { noOfEvents ->
+                                    log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
+                                    workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
+                                }
+                        } else {
+                            log.error { "Skipping ${eregEntity.type} chunk due to server state issue ${ServerState.state.javaClass.name}" }
+                        }
+                    } // end of use for InputStreamReader - AutoCloseable
+                }
             }
         }
         if (ServerState.isOk()) {
