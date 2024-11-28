@@ -34,8 +34,8 @@ spec:
     limits:
       memory: 9Gi
     requests:
-      cpu: 5m
-      memory: 1Gi
+      cpu: 10m
+      memory: 3Gi
   accessPolicy:
     outbound:
       external:
