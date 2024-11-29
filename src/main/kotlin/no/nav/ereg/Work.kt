@@ -281,7 +281,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
             if (ServerState.isOk()) {
-                cache.map.entries.chunked(10_000).forEach { chunk ->
+                cache.map.entries.chunked(1000).forEach { chunk ->
                     log.info { "Processing chunk of size ${chunk.size} for ${eregEntity.type} (total size ${cache.map.size})" }
 
                     val subCache = chunk.associate { it.key to it.value }
