@@ -78,6 +78,7 @@ fun <K, V> KafkaProducer<K, V>.publishIterator(
 
     log.info { "Ready to process" }
     while (iter.hasNext() && sendIsOk) {
+        log.info { "hasNext and about to take 100, noOfEvents $noOfEvents" }
         val materializedBatch = iter.asSequence().take(100).toList()
         materializedBatch.forEach {
             // Process payload here

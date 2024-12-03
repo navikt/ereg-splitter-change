@@ -301,7 +301,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
                 eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
                     if (ServerState.isOk()) {
-                        log.info { "${eregEntity.type}, f got sequence iterator and server state ok, publishing changes to kafka" }
+                        log.info { "${eregEntity.type}, g got sequence iterator and server state ok, publishing changes to kafka" }
                         try {
                             log.info("${seqIter.asSequence()}")
                         } catch (e: Exception) {
