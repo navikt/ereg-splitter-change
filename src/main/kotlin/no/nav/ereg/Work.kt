@@ -300,7 +300,8 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
                 eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
                     if (ServerState.isOk()) {
-                        log.info { "${eregEntity.type}, got sequence iterator for chunk and server state ok, publishing changes to kafka" }
+                        log.info { "${eregEntity.type}, got sequence iterator and server state ok, publishing changes to kafka" }
+                        log.info { "Sequence count ${seqIter.asSequence().count()}" }
                         publishIterator(seqIter, kafkaOrgTopic)
                             .also { noOfEvents ->
                                 log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }

@@ -43,7 +43,7 @@ internal fun <K, V> KafkaProducer<K, V>.send(topic: String, key: K, value: V): B
 /**
  * KafkaPayload is a simple key-value to be sent to Kafka
  */
-internal data class KafkaPayload<K, V> (
+data class KafkaPayload<K, V> (
     val key: K,
     val value: V
 )
@@ -51,7 +51,7 @@ internal data class KafkaPayload<K, V> (
 /**
  * publishIterator - iterate and send each element to kafka, unless an something occur
  */
-internal tailrec fun <K, V> KafkaProducer<K, V>.publishIterator(
+/*internal tailrec fun <K, V> KafkaProducer<K, V>.publishIterator(
     iter: Iterator<KafkaPayload<K, V>>,
     topic: String,
     sendIsOk: Boolean = true,
@@ -67,4 +67,24 @@ internal tailrec fun <K, V> KafkaProducer<K, V>.publishIterator(
             true
         },
         noOfEvents + 1
-    )
+    )*/
+
+fun <K, V> KafkaProducer<K, V>.publishIterator(
+    iter: Iterator<KafkaPayload<K, V>>,
+    topic: String
+): Int {
+    var sendIsOk = true
+    var noOfEvents = 0
+
+    log.info { "Ready to process" }
+    while (iter.hasNext() && sendIsOk) {
+        val payload = iter.next()
+        // Process payload here
+        // Example: send(topic, payload.key, payload.value)
+        sendIsOk = true
+        workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
+        noOfEvents++
+    }
+
+    return noOfEvents
+}
