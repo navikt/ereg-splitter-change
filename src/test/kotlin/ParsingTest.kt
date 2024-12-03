@@ -18,7 +18,6 @@ import no.nav.ereg.isOk
 import no.nav.ereg.kafkaOrgTopic
 import no.nav.ereg.publishIterator
 import no.nav.ereg.toKafkaPayload
-import no.nav.ereg.workMetrics
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.filter.gunzipped
@@ -105,7 +104,7 @@ class ParsingTest {
                     // Process payload here
                     // Example: send(topic, payload.key, payload.value)
                     sendIsOk = true
-                    workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
+                    // workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
                     noOfEvents++
                 }
             }

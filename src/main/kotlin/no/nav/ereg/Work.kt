@@ -8,6 +8,7 @@ import no.nav.ereg.kafka.AllRecords
 import no.nav.ereg.kafka.Key
 import no.nav.ereg.kafka.Value
 import no.nav.ereg.kafka.getAllRecords
+import no.nav.ereg.kafka.sendNullValue
 import no.nav.ereg.proto.EregOrganisationEventKey
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -323,9 +324,9 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         }
         if (ServerState.isOk()) {
             cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
-                // workMetrics.publishedTombstones.inc()
-                workMetrics.wouldHavePublishedTombstones.inc()
-                /*
+                workMetrics.publishedTombstones.inc()
+                // workMetrics.wouldHavePublishedTombstones.inc()
+
                 sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
                     if (sent) {
                         workMetrics.publishedTombstones.inc()
@@ -334,8 +335,6 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                         ServerState.state = ServerStates.KafkaIssues
                     }
                 }
-
-                 */
             }
         } else {
             log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
