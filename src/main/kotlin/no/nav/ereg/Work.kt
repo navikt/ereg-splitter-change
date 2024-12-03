@@ -5,11 +5,9 @@ import mu.KotlinLogging
 import no.nav.ereg.kafka.AKafkaConsumer
 import no.nav.ereg.kafka.AKafkaProducer
 import no.nav.ereg.kafka.AllRecords
-import no.nav.ereg.kafka.KafkaConsumerStates
 import no.nav.ereg.kafka.Key
 import no.nav.ereg.kafka.Value
 import no.nav.ereg.kafka.getAllRecords
-import no.nav.ereg.kafka.sendNullValue
 import no.nav.ereg.proto.EregOrganisationEventKey
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -188,11 +186,22 @@ data class WMetrics(
         .name("number_of_published_orgs")
         .help("Number of published orgs")
         .register(),
+    val wouldHaveNumberOfPublishedOrgs: Gauge = Gauge
+        .build()
+        .name("would_have_number_of_published_orgs")
+        .help("Would have number of published orgs")
+        .register(),
 
     val publishedTombstones: Gauge = Gauge
         .build()
         .name("published_tombstones")
         .help("Number of published tombstones")
+        .register(),
+
+    val wouldHavePublishedTombstones: Gauge = Gauge
+        .build()
+        .name("would_have_published_tombstones")
+        .help("Would Have Number of published tombstones")
         .register()
 ) {
 
@@ -207,7 +216,7 @@ val workMetrics = WMetrics()
 
 val ignoreCache = false
 var examples = 0
-
+/*
 internal fun cacheToGcp(ws: WorkSettings) {
     log.info { "cache to gcp run starting" }
 
@@ -250,6 +259,8 @@ internal fun cacheToGcp(ws: WorkSettings) {
     log.info { "cache to gcp run finished - cacheCount $cacheCount (tombstones $cacheCountTombstones), publishCount $publishCount (tombstones $publishCountTombstones)" }
 }
 
+ */
+
 internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     log.info { "bootstrap work session starting" }
 
@@ -281,30 +292,33 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
             if (ServerState.isOk()) {
-                cache.map.entries.chunked(1000).forEach { chunk ->
-                    log.info { "Processing chunk of size ${chunk.size} for ${eregEntity.type} (total size ${cache.map.size})" }
+                // cache.map.entries.chunked(1000).forEach { chunk ->
+                // log.info { "Processing chunk of size ${chunk.size} for ${eregEntity.type} (total size ${cache.map.size})" }
 
-                    val subCache = chunk.associate { it.key to it.value }
+                log.info { "Processing  for ${eregEntity.type} (total size of cache ${cache.map.size}" }
+                // val subCache = chunk.associate { it.key to it.value }
 
-                    eregEntity.getJsonAsSequenceIterator(subCache) { seqIter ->
-                        if (ServerState.isOk()) {
-                            log.info { "${eregEntity.type}, got sequence iterator for chunk and server state ok, publishing changes to kafka" }
-                            publishIterator(seqIter, kafkaOrgTopic)
-                                .also { noOfEvents ->
-                                    log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
-                                    workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
-                                }
-                        } else {
-                            log.error { "Skipping ${eregEntity.type} chunk due to server state issue ${ServerState.state.javaClass.name}" }
-                        }
-                    } // end of use for InputStreamReader - AutoCloseable
-                }
+                eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
+                    if (ServerState.isOk()) {
+                        log.info { "${eregEntity.type}, got sequence iterator for chunk and server state ok, publishing changes to kafka" }
+                        publishIterator(seqIter, kafkaOrgTopic)
+                            .also { noOfEvents ->
+                                log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
+                                // workMetrics.numberOfPublishedOrgs.inc(noOfEvents.toDouble())
+                                // workMetrics.wouldHaveNumberOfPublishedOrgs.inc(noOfEvents.toDouble())
+                            }
+                    } else {
+                        log.error { "Skipping ${eregEntity.type} chunk due to server state issue ${ServerState.state.javaClass.name}" }
+                    }
+                } // end of use for InputStreamReader - AutoCloseable
+                // }
             }
         }
         if (ServerState.isOk()) {
             cacheFileStatusMap.filter { it.value == FileStatus.NOT_PRESENT }.forEach {
-                workMetrics.publishedTombstones.inc()
-
+                // workMetrics.publishedTombstones.inc()
+                workMetrics.wouldHavePublishedTombstones.inc()
+                /*
                 sendNullValue(kafkaOrgTopic, orgNumberAsKey(it.key)).let { sent ->
                     if (sent) {
                         workMetrics.publishedTombstones.inc()
@@ -313,12 +327,14 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
                         ServerState.state = ServerStates.KafkaIssues
                     }
                 }
+
+                 */
             }
         } else {
             log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
         }
 
-        log.info { "Published ${workMetrics.publishedTombstones.get().toInt()} tombstones. (Present tombstones in cache before: ${cache.map.count{it.value == 0}}" }
+        log.info { "Published ${workMetrics.publishedTombstones.get().toInt()} (would have ${workMetrics.wouldHavePublishedTombstones.get().toInt()}) tombstones. (Present tombstones in cache before: ${cache.map.count{it.value == 0}}" }
     }
 
     log.info {

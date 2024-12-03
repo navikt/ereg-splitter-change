@@ -58,4 +58,13 @@ internal tailrec fun <K, V> KafkaProducer<K, V>.publishIterator(
     noOfEvents: Int = 0
 ): Int =
     if (!(iter.hasNext() && sendIsOk)) if (!sendIsOk) noOfEvents - 1 else noOfEvents
-    else publishIterator(iter, topic, iter.next().let { send(topic, it.key, it.value) }, noOfEvents + 1)
+    else publishIterator(
+        iter,
+        topic,
+        iter.next().let {
+            // send(topic, it.key, it.value)
+            workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
+            true
+        },
+        noOfEvents + 1
+    )
