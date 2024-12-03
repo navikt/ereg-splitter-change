@@ -316,7 +316,6 @@ internal tailrec fun InputStreamReader.captureJsonOrgObject(
         // the } completing the json object in json array
         if (balanceCP - 1 == 0) {
             val result = org.append(i.toChar()).toString()
-            println("Finishing while ongoing $result")
             JsonOrgObject(StreamState.STREAM_ONGOING, result, orgNo).addHashCode()
         }
         // otherwise, just continue in the not completed json object
@@ -337,7 +336,6 @@ fun InputStream.asJsonObjectSequence(): Sequence<JsonObject> = sequence {
         while (reader.hasNext()) {
             // Read the next JSON object in the array
             val jsonObject = reader.readJsonObject()
-            log.info { "Yielding" }
             yield(jsonObject) // Yield the object into the sequence
         }
         reader.endArray() // End of the JSON array
