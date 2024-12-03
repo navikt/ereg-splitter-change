@@ -338,7 +338,7 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     }
 
     log.info {
-        "Finished work session. Number of already existing: ${cacheFileStatusMap.values.count { it == FileStatus.SAME}}" +
+        "Finished work session cacheFileStatusMapSize: ${cacheFileStatusMap.size}. Number of already existing: ${cacheFileStatusMap.values.count { it == FileStatus.SAME}}" +
             ", updated: ${cacheFileStatusMap.values.count { it == FileStatus.UPDATED }}" +
             ", new: ${cacheFileStatusMap.values.count { it == FileStatus.NEW }}" +
             ", not present (new tombstones): ${cacheFileStatusMap.values.count { it == FileStatus.NOT_PRESENT }}" +
