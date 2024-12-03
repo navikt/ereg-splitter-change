@@ -1,6 +1,12 @@
 package no.nav.ereg
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
@@ -16,7 +22,8 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.filter.gunzipped
 import java.io.ByteArrayInputStream
-import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.StringBuilder
 import java.net.URI
@@ -102,7 +109,7 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
                     Pair(false, ByteArrayInputStream("".toByteArray(Charsets.UTF_8)))
                 }
                 if (streamAvailable.first)
-                    InputStreamReader(streamAvailable.second)
+                    streamAvailable.second
                         .use {
                             doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
                             log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
@@ -154,24 +161,27 @@ fun Int.toEvent(): String {
  * - the org.no is found
  * - the org is new of updated
  */
-internal fun InputStreamReader.asFilteredSequence(
+fun InputStream.asFilteredSequence(
     eregType: EREGEntityType,
     cache: Map<String, Int>
-): Sequence<KafkaPayload<ByteArray, ByteArray>> =
-    generateSequence { captureJsonOrgObject().takeIf { jsonOrgObject -> jsonOrgObject.isOk() } }
-        .filter { jsonOrgObject ->
+): Sequence<KafkaPayload<ByteArray, ByteArray>> = this.asJsonObjectSequence().filter { it.has("organisasjonsnummer") }.map {
+    JsonOrgObject(json = it.toString(), streamState = StreamState.STREAM_ONGOING, orgNo = it["organisasjonsnummer"].asString).addHashCode()
+}
+    .filter { jsonOrgObject ->
 
-            val status = cache.exists(jsonOrgObject)
-            when (status) {
-                ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
-                ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
-                ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
-            }
-
-            Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
-            status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
+        val status = cache.exists(jsonOrgObject)
+        when (status) {
+            ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
+            ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
+            ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
         }
-        .map { it.toKafkaPayload(eregType) }
+
+        Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
+        status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
+    }
+    .map {
+        it.toKafkaPayload(eregType)
+    }
 
 /** JsonOrgObject is just a string representation of a json object in a json array
  * @property streamState is the status of the stream and thus the content
@@ -274,7 +284,7 @@ internal tailrec fun InputStreamReader.captureOrgNo(
  *
  * It doesn't matter whether the json object has sub objects
  */
-internal tailrec fun InputStreamReader.captureJsonOrgObjectOLD(
+internal tailrec fun InputStreamReader.captureJsonOrgObject(
     balanceCP: Int = 0,
     org: StringBuilder = StringBuilder(),
     orgNo: String = ""
@@ -304,8 +314,11 @@ internal tailrec fun InputStreamReader.captureJsonOrgObjectOLD(
     // }
     125 ->
         // the } completing the json object in json array
-        if (balanceCP - 1 == 0)
-            JsonOrgObject(StreamState.STREAM_ONGOING, org.append(i.toChar()).toString(), orgNo).addHashCode()
+        if (balanceCP - 1 == 0) {
+            val result = org.append(i.toChar()).toString()
+            println("Finishing while ongoing $result")
+            JsonOrgObject(StreamState.STREAM_ONGOING, result, orgNo).addHashCode()
+        }
         // otherwise, just continue in the not completed json object
         else captureJsonOrgObject(balanceCP - 1, org.append(i.toChar()), orgNo)
     else ->
@@ -315,64 +328,60 @@ internal tailrec fun InputStreamReader.captureJsonOrgObjectOLD(
         else captureJsonOrgObject(balanceCP, org, orgNo)
 }
 
-/**
- * Capture a JsonOrgObject using Gson's streaming JSON parser.
- * This version processes the JSON incrementally to avoid memory issues.
- */
-internal fun InputStreamReader.captureJsonOrgObject(
-    // orgNoKey: String = "organisasjonsnummer",
-    balanceCP: Int = 0,
-    org: StringBuilder = StringBuilder(),
-    orgNo: String = ""
-): JsonOrgObject {
-    val reader = JsonReader(this)
-    var currentOrgNo = orgNo
-    val orgNoKey: String = "organisasjonsnummer"
+// This function parses a JSON array stream and returns a Sequence of JsonObjects.
+fun InputStream.asJsonObjectSequence(): Sequence<JsonObject> = sequence {
+    val reader = JsonReader(InputStreamReader(this@asJsonObjectSequence))
 
     try {
-        reader.beginArray() // Assuming the input is a JSON array
+        reader.beginArray() // Start of the JSON array
         while (reader.hasNext()) {
-            reader.beginObject()
-
-            var jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING)
-
-            // Loop through each key-value pair inside the current JSON object
-            while (reader.hasNext()) {
-                val name = reader.nextName()
-
-                // Look for "organisasjonsnummer" in the object
-                if (name == orgNoKey) {
-                    currentOrgNo = reader.nextString()
-                    log.info { "Captured org no $currentOrgNo" }
-                    // Capture or process other details from the object if needed
-                } else {
-                    // Skip or process other properties as necessary
-                    reader.skipValue()
-                }
-            }
-
-            // Process the object after reading all its fields
-            if (balanceCP == 0 && currentOrgNo.isNotEmpty()) {
-                jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING, org.toString(), currentOrgNo).addHashCode()
-                File("/tmp/jsonOrgObjectsJsons").appendText(jsonOrgObject.json + "\n\n")
-            }
-
-            // Here, you would continue with additional processing logic
-            // For example, adding it to a collection, logging, or other operations
-            if (balanceCP == 0) {
-                return jsonOrgObject
-            }
-
-            reader.endObject()
+            // Read the next JSON object in the array
+            val jsonObject = reader.readJsonObject()
+            log.info { "Yielding" }
+            yield(jsonObject) // Yield the object into the sequence
         }
-
-        // End of array reached
-        return JsonOrgObject(StreamState.STREAM_FINISHED)
-    } catch (e: Exception) {
-        // Handle any exceptions that occur during parsing
-        log.warn { "Stream processing failure: ${e.stackTraceToString()}" }
-        return JsonOrgObject(StreamState.STREAM_EXCEPTION)
+        reader.endArray() // End of the JSON array
+    } catch (e: IOException) {
+        // Handle any IO errors (e.g., file reading errors)
+        println("Error reading JSON stream: ${e.message}")
     } finally {
-        reader.close()
+        reader.close() // Close the reader to release resources
     }
+}
+
+// Extension function to read a single JsonObject from the stream
+private fun JsonReader.readJsonObject(): JsonObject {
+    val jsonObject = JsonObject()
+    this.beginObject() // Begin reading the JSON object
+    while (this.hasNext()) {
+        val name = this.nextName() // Get the field name
+        val value = this.nextValue() // Get the value for the field
+        jsonObject.add(name, value) // Add it to the JsonObject
+    }
+    this.endObject() // End reading the JSON object
+    return jsonObject
+}
+
+// Helper function to read the next value depending on the token type
+private fun JsonReader.nextValue(): JsonElement {
+    return when (this.peek()) {
+        JsonToken.BEGIN_OBJECT -> this.readJsonObject()
+        JsonToken.BEGIN_ARRAY -> this.readJsonArray()
+        JsonToken.STRING -> JsonPrimitive(this.nextString())
+        JsonToken.NUMBER -> JsonPrimitive(this.nextDouble())
+        JsonToken.BOOLEAN -> JsonPrimitive(this.nextBoolean())
+        JsonToken.NULL -> JsonNull.INSTANCE
+        else -> throw IllegalStateException("Unexpected token: ${this.peek()}")
+    }
+}
+
+// Extension function to handle reading an array when necessary
+private fun JsonReader.readJsonArray(): JsonElement {
+    val jsonArray = JsonArray()
+    this.beginArray()
+    while (this.hasNext()) {
+        jsonArray.add(this.nextValue()) // Add elements to the array
+    }
+    this.endArray()
+    return jsonArray
 }
