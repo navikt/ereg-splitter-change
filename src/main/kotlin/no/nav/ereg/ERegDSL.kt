@@ -16,6 +16,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.filter.gunzipped
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.InputStreamReader
 import java.lang.StringBuilder
 import java.net.URI
@@ -342,6 +343,7 @@ internal fun InputStreamReader.captureJsonOrgObject(
                 // Look for "organisasjonsnummer" in the object
                 if (name == orgNoKey) {
                     currentOrgNo = reader.nextString()
+                    log.info { "Captured org no $currentOrgNo" }
                     // Capture or process other details from the object if needed
                 } else {
                     // Skip or process other properties as necessary
@@ -351,7 +353,8 @@ internal fun InputStreamReader.captureJsonOrgObject(
 
             // Process the object after reading all its fields
             if (balanceCP == 0 && currentOrgNo.isNotEmpty()) {
-                jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING, org.toString(), currentOrgNo)
+                jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING, org.toString(), currentOrgNo).addHashCode()
+                File("/tmp/jsonOrgObjectsJsons").appendText(jsonOrgObject.json + "\n\n")
             }
 
             // Here, you would continue with additional processing logic
@@ -367,7 +370,7 @@ internal fun InputStreamReader.captureJsonOrgObject(
         return JsonOrgObject(StreamState.STREAM_FINISHED)
     } catch (e: Exception) {
         // Handle any exceptions that occur during parsing
-        log.warn { "Stream processing failure: ${e.message}" }
+        log.warn { "Stream processing failure: ${e.stackTraceToString()}" }
         return JsonOrgObject(StreamState.STREAM_EXCEPTION)
     } finally {
         reader.close()
