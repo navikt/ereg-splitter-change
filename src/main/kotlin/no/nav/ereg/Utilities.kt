@@ -78,12 +78,14 @@ fun <K, V> KafkaProducer<K, V>.publishIterator(
 
     log.info { "Ready to process" }
     while (iter.hasNext() && sendIsOk) {
-        val payload = iter.next()
-        // Process payload here
-        // Example: send(topic, payload.key, payload.value)
-        sendIsOk = true
-        workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
-        noOfEvents++
+        val materializedBatch = iter.asSequence().take(100).toList()
+        materializedBatch.forEach {
+            // Process payload here
+            // Example: send(topic, payload.key, payload.value)
+            sendIsOk = true
+            workMetrics.wouldHaveNumberOfPublishedOrgs.inc()
+            noOfEvents++
+        }
     }
 
     return noOfEvents
