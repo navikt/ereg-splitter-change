@@ -14,6 +14,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
+import java.lang.Exception
 
 private val log = KotlinLogging.logger {}
 
@@ -300,8 +301,13 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
 
                 eregEntity.getJsonAsSequenceIterator(cache.map) { seqIter ->
                     if (ServerState.isOk()) {
-                        log.info { "${eregEntity.type}, got sequence iterator and server state ok, publishing changes to kafka" }
-                        log.info { "Sequence count ${seqIter.asSequence().count()}" }
+                        log.info { "${eregEntity.type}, e got sequence iterator and server state ok, publishing changes to kafka" }
+                        try {
+                            log.info { "Sequence count ${seqIter.asSequence().count()}" }
+                        } catch (e: Exception) {
+                            log.error { "Seq  issue $e" }
+                        }
+
                         publishIterator(seqIter, kafkaOrgTopic)
                             .also { noOfEvents ->
                                 log.info { "${eregEntity.type}, $noOfEvents orgs published to kafka ($kafkaOrgTopic)" }
