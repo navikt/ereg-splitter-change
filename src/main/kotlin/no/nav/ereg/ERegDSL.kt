@@ -1,5 +1,6 @@
 package no.nav.ereg
 
+import com.google.gson.stream.JsonReader
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
@@ -272,7 +273,7 @@ internal tailrec fun InputStreamReader.captureOrgNo(
  *
  * It doesn't matter whether the json object has sub objects
  */
-internal tailrec fun InputStreamReader.captureJsonOrgObject(
+internal tailrec fun InputStreamReader.captureJsonOrgObjectOLD(
     balanceCP: Int = 0,
     org: StringBuilder = StringBuilder(),
     orgNo: String = ""
@@ -311,4 +312,64 @@ internal tailrec fun InputStreamReader.captureJsonOrgObject(
         if (balanceCP >= 1) captureJsonOrgObject(balanceCP, org.append(i.toChar()), orgNo)
         // skip data outside json object, e.g. [ ]
         else captureJsonOrgObject(balanceCP, org, orgNo)
+}
+
+/**
+ * Capture a JsonOrgObject using Gson's streaming JSON parser.
+ * This version processes the JSON incrementally to avoid memory issues.
+ */
+internal fun InputStreamReader.captureJsonOrgObject(
+    // orgNoKey: String = "organisasjonsnummer",
+    balanceCP: Int = 0,
+    org: StringBuilder = StringBuilder(),
+    orgNo: String = ""
+): JsonOrgObject {
+    val reader = JsonReader(this)
+    var currentOrgNo = orgNo
+    val orgNoKey: String = "organisasjonsnummer"
+
+    try {
+        reader.beginArray() // Assuming the input is a JSON array
+        while (reader.hasNext()) {
+            reader.beginObject()
+
+            var jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING)
+
+            // Loop through each key-value pair inside the current JSON object
+            while (reader.hasNext()) {
+                val name = reader.nextName()
+
+                // Look for "organisasjonsnummer" in the object
+                if (name == orgNoKey) {
+                    currentOrgNo = reader.nextString()
+                    // Capture or process other details from the object if needed
+                } else {
+                    // Skip or process other properties as necessary
+                    reader.skipValue()
+                }
+            }
+
+            // Process the object after reading all its fields
+            if (balanceCP == 0 && currentOrgNo.isNotEmpty()) {
+                jsonOrgObject = JsonOrgObject(StreamState.STREAM_ONGOING, org.toString(), currentOrgNo)
+            }
+
+            // Here, you would continue with additional processing logic
+            // For example, adding it to a collection, logging, or other operations
+            if (balanceCP == 0) {
+                return jsonOrgObject
+            }
+
+            reader.endObject()
+        }
+
+        // End of array reached
+        return JsonOrgObject(StreamState.STREAM_FINISHED)
+    } catch (e: Exception) {
+        // Handle any exceptions that occur during parsing
+        log.warn { "Stream processing failure: ${e.message}" }
+        return JsonOrgObject(StreamState.STREAM_EXCEPTION)
+    } finally {
+        reader.close()
+    }
 }
