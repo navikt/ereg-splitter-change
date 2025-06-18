@@ -10,11 +10,7 @@ import com.google.gson.stream.JsonToken
 import mu.KotlinLogging
 import no.nav.ereg.proto.EregOrganisationEventKey
 import no.nav.ereg.proto.EregOrganisationEventValue
-import org.apache.http.HttpHost
-import org.apache.http.client.config.CookieSpecs
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.impl.client.HttpClients
-import org.http4k.client.ApacheClient
+import org.http4k.client.OkHttp
 import org.http4k.core.BodyMode
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -26,7 +22,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.StringBuilder
-import java.net.URI
 
 private val log = KotlinLogging.logger {}
 
@@ -35,14 +30,10 @@ const val EV_eregUEAccept = "EREG_UEACCEPT"
 const val EV_eregOEUrl = "EREG_OEURL"
 const val EV_eregOEAccept = "EREG_OEACCEPT"
 
-const val EV_httpsProxy = "HTTPS_PROXY"
-
 val eregUEUrl = getEnvOrDefault(EV_eregUEUrl, "")
 val eregUEAccept = getEnvOrDefault(EV_eregUEAccept, "")
 val eregOEUrl = getEnvOrDefault(EV_eregOEUrl, "")
 val eregOEAccept = getEnvOrDefault(EV_eregOEAccept, "")
-
-val httpsProxy: String = getEnvOrDefault(EV_httpsProxy, "")
 
 data class EREGEntity(
     val type: EREGEntityType,
@@ -68,24 +59,9 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
 
     log.info { "${eregEntity.type}, request json data set as stream" }
 
-    val hp = httpsProxy
-    val apacheHttpClient = if (hp.isNotEmpty()) {
-        ApacheClient(
-            client =
-                HttpClients.custom()
-                    .setDefaultRequestConfig(
-                        RequestConfig.custom()
-                            .setProxy(HttpHost(URI(hp).host, URI(hp).port, URI(hp).scheme))
-                            .setRedirectsEnabled(false)
-                            .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
-                            .build()
-                    )
-                    .build(),
-            responseBodyMode = BodyMode.Stream
-        )
-    } else ApacheClient(responseBodyMode = BodyMode.Stream)
+    val okHttpClient = OkHttp(bodyMode = BodyMode.Stream)
 
-    val resp = apacheHttpClient
+    val resp = okHttpClient
         .runCatching { invoke(eregEntity.getRequest()).also { responseTime.observeDuration() } }
         .onSuccess { response ->
             if (response.status.successful) {

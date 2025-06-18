@@ -10,7 +10,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.routing.bind
 import org.http4k.routing.routes
-import org.http4k.server.ApacheServer
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 import java.io.StringWriter
 
@@ -44,7 +44,7 @@ fun naisAPI(): HttpHandler = routes(
 )
 
 fun enableNAISAPI(port: Int = NAIS_DEFAULT_PORT, doSomething: () -> Unit): Boolean =
-    naisAPI().asServer(ApacheServer(port)).let { srv ->
+    naisAPI().asServer(Netty(port)).let { srv ->
         try {
             srv.start().use {
                 log.info { "NAIS DSL is up and running at port $port" }
