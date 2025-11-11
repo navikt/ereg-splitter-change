@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename", "ktlint:standard:property-naming")
+
 package no.nav.ereg
 
 const val env_DEPLOY_APP = "DEPLOY_APP"
