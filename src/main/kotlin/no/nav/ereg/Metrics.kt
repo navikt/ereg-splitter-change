@@ -7,58 +7,64 @@ import io.prometheus.client.hotspot.DefaultExports
 import mu.KotlinLogging
 
 object Metrics {
-
     private val log = KotlinLogging.logger { }
 
     val cRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
 
-    val receivedBytes: Histogram = Histogram
-        .build()
-        .name("response_size_bytes_histogram")
-        .labelNames("type")
-        .help("JSON stream in bytes")
-        .register()
+    val receivedBytes: Histogram =
+        Histogram
+            .build()
+            .name("response_size_bytes_histogram")
+            .labelNames("type")
+            .help("JSON stream in bytes")
+            .register()
 
-    val responseLatency: Histogram = Histogram
-        .build()
-        .name("response_latency_seconds_histogram")
-        .labelNames("type")
-        .help("JSON stream response latency")
-        .register()
+    val responseLatency: Histogram =
+        Histogram
+            .build()
+            .name("response_latency_seconds_histogram")
+            .labelNames("type")
+            .help("JSON stream response latency")
+            .register()
 
-    val successfulRequest: Gauge = Gauge
-        .build()
-        .name("successful_request_gauge")
-        .labelNames("type")
-        .help("No. of successful requests since last restart")
-        .register()
+    val successfulRequest: Gauge =
+        Gauge
+            .build()
+            .name("successful_request_gauge")
+            .labelNames("type")
+            .help("No. of successful requests since last restart")
+            .register()
 
-    val failedRequest: Gauge = Gauge
-        .build()
-        .name("failed_request_gauge")
-        .labelNames("type")
-        .help("No. of failed requests since last restart")
-        .register()
+    val failedRequest: Gauge =
+        Gauge
+            .build()
+            .name("failed_request_gauge")
+            .labelNames("type")
+            .help("No. of failed requests since last restart")
+            .register()
 
-    val noOfAttempts: Gauge = Gauge
-        .build()
-        .name("attempt_gauge")
-        .help("No. of attempts since last successful run")
-        .register()
+    val noOfAttempts: Gauge =
+        Gauge
+            .build()
+            .name("attempt_gauge")
+            .help("No. of attempts since last successful run")
+            .register()
 
-    val publishedOrgs: Gauge = Gauge
-        .build()
-        .name("published_organisation_gauge")
-        .labelNames("type", "status")
-        .help("No. of organisations published to kafka in last work session")
-        .register()
+    val publishedOrgs: Gauge =
+        Gauge
+            .build()
+            .name("published_organisation_gauge")
+            .labelNames("type", "status")
+            .help("No. of organisations published to kafka in last work session")
+            .register()
 
-    val cachedOrgNoHashCode: Gauge = Gauge
-        .build()
-        .name("cached_orgno_hashcode_event_gauge")
-        .labelNames("type")
-        .help("No. of cached orgno-hashcode consumed in last work session")
-        .register()
+    val cachedOrgNoHashCode: Gauge =
+        Gauge
+            .build()
+            .name("cached_orgno_hashcode_event_gauge")
+            .labelNames("type")
+            .help("No. of cached orgno-hashcode consumed in last work session")
+            .register()
 
     init {
         DefaultExports.initialize()

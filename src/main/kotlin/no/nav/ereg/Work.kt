@@ -20,59 +20,71 @@ import java.lang.Exception
 private val log = KotlinLogging.logger {}
 
 // Work environment dependencies
-const val EV_kafkaTopic = "KAFKA_TOPIC"
+const val EV_KAFKA_TOPIC = "KAFKA_TOPIC"
 
-val kafkaOrgTopic = getEnvOrDefault(EV_kafkaTopic, "topic not set")
+val kafkaOrgTopic = getEnvOrDefault(EV_KAFKA_TOPIC, "topic not set")
 val kafkaCacheTopicGcp = "team-dialog.ereg-cache" // same as above now
 
-const val EV_kafkaKeystorePath = "KAFKA_KEYSTORE_PATH"
-const val EV_kafkaCredstorePassword = "KAFKA_CREDSTORE_PASSWORD"
-const val EV_kafkaTruststorePath = "KAFKA_TRUSTSTORE_PATH"
-fun fetchEnv(env: String): String {
-    return getEnvOrDefault(env, "$env missing")
-}
+const val EV_KAFKA_KEYSTORE_PATH = "KAFKA_KEYSTORE_PATH"
+const val EV_KAFKA_CREDSTORE_PASSWORD = "KAFKA_CREDSTORE_PASSWORD"
+const val EV_KAFKA_TRUSTSTORE_PATH = "KAFKA_TRUSTSTORE_PATH"
+
+fun fetchEnv(env: String): String = getEnvOrDefault(env, "$env missing")
 
 data class WorkSettings(
-
-    val kafkaConsumerOnPrem: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL")
-    ),
-    val kafkaProducerOnPrem: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
-        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL")
-    ),
-    val kafkaConsumerGcp: Map<String, Any> = AKafkaConsumer.configBase + mapOf<String, Any>(
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
-        "security.protocol" to "SSL",
-        SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
-        SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
-        SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
-        SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
-    ),
-    val kafkaProducerGcp: Map<String, Any> = AKafkaProducer.configBase + mapOf<String, Any>(
-        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
-        "security.protocol" to "SSL",
-        SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaKeystorePath),
-        SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword),
-        SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_kafkaTruststorePath),
-        SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_kafkaCredstorePassword)
-    )
+    val kafkaConsumerOnPrem: Map<String, Any> =
+        AKafkaConsumer.configBase +
+            mapOf<String, Any>(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL"),
+            ),
+    val kafkaProducerOnPrem: Map<String, Any> =
+        AKafkaProducer.configBase +
+            mapOf<String, Any>(
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to getEnvOrDefault("KAFKA_BROKERS_ON_PREM", "KAFKA_LOCAL"),
+            ),
+    val kafkaConsumerGcp: Map<String, Any> =
+        AKafkaConsumer.configBase +
+            mapOf<String, Any>(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+                "security.protocol" to "SSL",
+                SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_KAFKA_KEYSTORE_PATH),
+                SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_KAFKA_CREDSTORE_PASSWORD),
+                SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_KAFKA_TRUSTSTORE_PATH),
+                SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_KAFKA_CREDSTORE_PASSWORD),
+            ),
+    val kafkaProducerGcp: Map<String, Any> =
+        AKafkaProducer.configBase +
+            mapOf<String, Any>(
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
+                "security.protocol" to "SSL",
+                SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG to fetchEnv(EV_KAFKA_KEYSTORE_PATH),
+                SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG to fetchEnv(EV_KAFKA_CREDSTORE_PASSWORD),
+                SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG to fetchEnv(EV_KAFKA_TRUSTSTORE_PATH),
+                SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG to fetchEnv(EV_KAFKA_CREDSTORE_PASSWORD),
+            ),
 )
 
 enum class FileStatus {
-    NOT_PRESENT, SAME, UPDATED, NEW
+    NOT_PRESENT,
+    SAME,
+    UPDATED,
+    NEW,
 }
 
 sealed class Cache {
     object Missing : Cache()
+
     object Invalid : Cache()
 
-    data class Exist(val map: Map<String, Int>) : Cache() {
+    data class Exist(
+        val map: Map<String, Int>,
+    ) : Cache() {
         val isEmpty: Boolean
             get() = map.isEmpty()
         val statusBeforeFileRead: Map<String, FileStatus>
@@ -80,59 +92,82 @@ sealed class Cache {
     }
 
     companion object {
-        fun load(kafkaConsumerConfig: Map<String, Any>, topic: String): Cache = kotlin.runCatching {
-            log.info { "Attempting load cache from topic $topic." }
-            log.info { "Attempting load cache from config $kafkaConsumerConfig" }
-            when (val result = getAllRecords<ByteArray, ByteArray>(kafkaConsumerConfig, listOf(topic))) {
-                is AllRecords.Exist -> {
-                    when {
-                        result.hasMissingKey() ->
-                            Missing
-                                .also { log.error { "Cache has null in key" } }
-                        else -> {
-                            val enheter: MutableMap<String, Int> = mutableMapOf()
-                            val underenheter: MutableMap<String, Int> = mutableMapOf()
-                            result.getKeysValues().map {
-                                val key = it.k.protobufSafeParseKey()
-                                Triple<String, EREGEntityType, Int>(
-                                    key.orgNumber,
-                                    EREGEntityType.valueOf(key.orgType.toString()),
-                                    it.v.protobufSafeParseValue().jsonHashCode
-                                )
-                            }
-                                .filter { it.first.isNotEmpty() }
-                                .groupBy { it.second }
-                                .let { tmp ->
-                                    tmp[EREGEntityType.ENHET]?.let { list -> enheter.putAll(list.map { tri -> tri.first to tri.third }) }
-                                    tmp[EREGEntityType.UNDERENHET]?.let { list -> underenheter.putAll(list.map { tri -> tri.first to tri.third }) }
-                                }
-                            Metrics.cachedOrgNoHashCode.labels(EREGEntityType.ENHET.toString()).inc(enheter.size.toDouble())
-                            Metrics.cachedOrgNoHashCode.labels(EREGEntityType.UNDERENHET.toString()).inc(underenheter.size.toDouble())
-                            val tombstones: MutableSet<String> = mutableSetOf()
-                            result.getKeysTombstones().map {
-                                it.k.protobufSafeParseKey().orgNumber
-                            }.filter { it.isNotEmpty() }.let { tombstones.addAll(it) }
-                            val cacheMap: MutableMap<String, Int> = mutableMapOf()
-                            cacheMap.putAll(enheter)
-                            cacheMap.putAll(underenheter)
-                            cacheMap.putAll(tombstones.map { it to 0 })
+        fun load(
+            kafkaConsumerConfig: Map<String, Any>,
+            topic: String,
+        ): Cache =
+            kotlin
+                .runCatching {
+                    log.info { "Attempting load cache from topic $topic." }
+                    log.info { "Attempting load cache from config $kafkaConsumerConfig" }
+                    when (val result = getAllRecords<ByteArray, ByteArray>(kafkaConsumerConfig, listOf(topic))) {
+                        is AllRecords.Exist -> {
+                            when {
+                                result.hasMissingKey() ->
+                                    Missing
+                                        .also { log.error { "Cache has null in key" } }
+                                else -> {
+                                    val enheter: MutableMap<String, Int> = mutableMapOf()
+                                    val underenheter: MutableMap<String, Int> = mutableMapOf()
+                                    result
+                                        .getKeysValues()
+                                        .map {
+                                            val key = it.k.protobufSafeParseKey()
+                                            Triple<String, EREGEntityType, Int>(
+                                                key.orgNumber,
+                                                EREGEntityType.valueOf(key.orgType.toString()),
+                                                it.v.protobufSafeParseValue().jsonHashCode,
+                                            )
+                                        }.filter { it.first.isNotEmpty() }
+                                        .groupBy { it.second }
+                                        .let { tmp ->
+                                            tmp[EREGEntityType.ENHET]?.let { list ->
+                                                enheter.putAll(list.map { tri -> tri.first to tri.third })
+                                            }
+                                            tmp[EREGEntityType.UNDERENHET]?.let { list ->
+                                                underenheter.putAll(
+                                                    list.map { tri ->
+                                                        tri.first to
+                                                            tri.third
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    Metrics.cachedOrgNoHashCode.labels(EREGEntityType.ENHET.toString()).inc(enheter.size.toDouble())
+                                    Metrics.cachedOrgNoHashCode
+                                        .labels(
+                                            EREGEntityType.UNDERENHET.toString(),
+                                        ).inc(underenheter.size.toDouble())
+                                    val tombstones: MutableSet<String> = mutableSetOf()
+                                    result
+                                        .getKeysTombstones()
+                                        .map {
+                                            it.k.protobufSafeParseKey().orgNumber
+                                        }.filter { it.isNotEmpty() }
+                                        .let { tombstones.addAll(it) }
+                                    val cacheMap: MutableMap<String, Int> = mutableMapOf()
+                                    cacheMap.putAll(enheter)
+                                    cacheMap.putAll(underenheter)
+                                    cacheMap.putAll(tombstones.map { it to 0 })
 
-                            var badCount = 0
+                                    var badCount = 0
 
-                            val c = result.records.map {
-                                if (it.first is Key.Exist && it.second is Value.Exist) {
-                                    (it.first as Key.Exist).k.protobufSafeParseKey() to (it.second as Value.Exist).v.protobufSafeParseValue().jsonHashCode
-                                } else if (it.first is Key.Exist && it.second is Value.Missing) {
-                                    (it.first as Key.Exist).k.protobufSafeParseKey() to null
-                                } else {
-                                    badCount++
-                                    null to null
-                                }
-                            }
+                                    val c =
+                                        result.records.map {
+                                            if (it.first is Key.Exist && it.second is Value.Exist) {
+                                                (it.first as Key.Exist).k.protobufSafeParseKey() to
+                                                    (it.second as Value.Exist).v.protobufSafeParseValue().jsonHashCode
+                                            } else if (it.first is Key.Exist && it.second is Value.Missing) {
+                                                (it.first as Key.Exist).k.protobufSafeParseKey() to null
+                                            } else {
+                                                badCount++
+                                                null to null
+                                            }
+                                        }
 
-                            val m = c.toMap()
-                            log.info { " bad count $badCount" }
-                            log.info { "C list length ${c.size}, m map size ${m.size}" }
+                                    val m = c.toMap()
+                                    log.info { " bad count $badCount" }
+                                    log.info { "C list length ${c.size}, m map size ${m.size}" }
                             /*
                             this.records.map {
             if (it.first is Key.Exist && it.second is Value.Missing)
@@ -141,72 +176,92 @@ sealed class Cache {
         }.filterIsInstance<KeyAndTombstone.Exist<K>>()
                              */
 
-                            val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
+                                    val presenceUEinTombstones = underenheter.keys.filter { tombstones.contains(it) }.count()
 
-                            val presenceEinUE = enheter.keys.filter { underenheter.contains(it) }.count()
-                            log.info { "Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}" }
+                                    val presenceEinUE = enheter.keys.filter { underenheter.contains(it) }.count()
+                                    log.info {
+                                        "Presence of UE in tombstones $presenceUEinTombstones, E IN UE $presenceEinUE. Example UE: ${underenheter.keys.last()}"
+                                    }
 
-                            log.info { "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones" }
+                                    log.info {
+                                        "Cache has ${enheter.size} ENHET - and ${underenheter.size} UNDERENHET entries - and ${tombstones.size} tombstones"
+                                    }
 
-                            log.info {
-                                "Otherwise derived caches has ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} ENHET," +
-                                    " ${m.filter{it.key != null && it.value != null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} UNDERENHET," +
-                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.ENHET}.count()} TOMB ENHET," +
-                                    " ${m.filter{it.key != null && it.value == null && it.key?.orgType == EregOrganisationEventKey.OrgType.UNDERENHET}.count()} TOMB UNDERENHET" +
-                                    " ${m.filter{it.key != null && it.value == null}.count()} TOMBSTONES TOTAL"
+                                    log.info {
+                                        "Otherwise derived caches has ${m.filter{
+                                            it.key != null && it.value != null && it.key?.orgType ==
+                                                EregOrganisationEventKey.OrgType.ENHET
+                                        }.count()} ENHET," +
+                                            " ${m.filter{
+                                                it.key != null && it.value != null && it.key?.orgType ==
+                                                    EregOrganisationEventKey.OrgType.UNDERENHET
+                                            }.count()} UNDERENHET," +
+                                            " ${m.filter{
+                                                it.key != null && it.value == null && it.key?.orgType ==
+                                                    EregOrganisationEventKey.OrgType.ENHET
+                                            }.count()} TOMB ENHET," +
+                                            " ${m.filter{
+                                                it.key != null && it.value == null && it.key?.orgType ==
+                                                    EregOrganisationEventKey.OrgType.UNDERENHET
+                                            }.count()} TOMB UNDERENHET" +
+                                            " ${m.filter{it.key != null && it.value == null}.count()} TOMBSTONES TOTAL"
+                                    }
+
+                                    Exist(cacheMap).also { log.info { "Cache size is ${it.map.size}" } }
+                                }
                             }
-
-                            Exist(cacheMap).also { log.info { "Cache size is ${it.map.size}" } }
                         }
+                        else -> Missing
                     }
-                }
-                else -> Missing
-            }
-        }
-            .onFailure { log.error { "Error building Cache - ${it.message}" } }
-            .getOrDefault(Invalid)
+                }.onFailure { log.error { "Error building Cache - ${it.message}" } }
+                .getOrDefault(Invalid)
     }
 }
 
 sealed class ExitReason {
     object Issue : ExitReason()
+
     object NoEvents : ExitReason()
+
     object NoCache : ExitReason()
+
     object Work : ExitReason()
 
     fun isOK(): Boolean = this is Work || this is NoEvents
 }
 
 data class WMetrics(
-    val sizeOfCache: Gauge = Gauge
-        .build()
-        .name("size_of_cache")
-        .help("Size of ereg cache")
-        .register(),
-    val numberOfPublishedOrgs: Gauge = Gauge
-        .build()
-        .name("number_of_published_orgs")
-        .help("Number of published orgs")
-        .register(),
-    val wouldHaveNumberOfPublishedOrgs: Gauge = Gauge
-        .build()
-        .name("would_have_number_of_published_orgs")
-        .help("Would have number of published orgs")
-        .register(),
-
-    val publishedTombstones: Gauge = Gauge
-        .build()
-        .name("published_tombstones")
-        .help("Number of published tombstones")
-        .register(),
-
-    val wouldHavePublishedTombstones: Gauge = Gauge
-        .build()
-        .name("would_have_published_tombstones")
-        .help("Would Have Number of published tombstones")
-        .register()
+    val sizeOfCache: Gauge =
+        Gauge
+            .build()
+            .name("size_of_cache")
+            .help("Size of ereg cache")
+            .register(),
+    val numberOfPublishedOrgs: Gauge =
+        Gauge
+            .build()
+            .name("number_of_published_orgs")
+            .help("Number of published orgs")
+            .register(),
+    val wouldHaveNumberOfPublishedOrgs: Gauge =
+        Gauge
+            .build()
+            .name("would_have_number_of_published_orgs")
+            .help("Would have number of published orgs")
+            .register(),
+    val publishedTombstones: Gauge =
+        Gauge
+            .build()
+            .name("published_tombstones")
+            .help("Number of published tombstones")
+            .register(),
+    val wouldHavePublishedTombstones: Gauge =
+        Gauge
+            .build()
+            .name("would_have_published_tombstones")
+            .help("Would Have Number of published tombstones")
+            .register(),
 ) {
-
     fun clearAll() {
         this.sizeOfCache.clear()
         this.numberOfPublishedOrgs.clear()
@@ -286,11 +341,11 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
     // return Pair(ws, ExitReason.NoEvents)
 
     AKafkaProducer<ByteArray, ByteArray>(
-        config = ws.kafkaProducerGcp
+        config = ws.kafkaProducerGcp,
     ).produce {
         listOf(
             EREGEntity(EREGEntityType.ENHET, eregOEUrl, eregOEAccept),
-            EREGEntity(EREGEntityType.UNDERENHET, eregUEUrl, eregUEAccept)
+            EREGEntity(EREGEntityType.UNDERENHET, eregUEUrl, eregUEAccept),
         ).forEach { eregEntity ->
             // only do the work if everything is ok so far
             if (ServerState.isOk()) {
@@ -340,11 +395,20 @@ internal fun work(ws: WorkSettings): Pair<WorkSettings, ExitReason> {
             log.error { "Skipping tombstone publishing due to server state issue ${ServerState.state.javaClass.name}" }
         }
 
-        log.info { "Published ${workMetrics.publishedTombstones.get().toInt()} (would have ${workMetrics.wouldHavePublishedTombstones.get().toInt()}) tombstones. (Present tombstones in cache before: ${cache.map.count{it.value == 0}}" }
+        log.info {
+            "Published ${workMetrics.publishedTombstones.get().toInt()} (would have " +
+                "${workMetrics.wouldHavePublishedTombstones.get().toInt()}) tombstones. " +
+                "(Present tombstones in cache before: ${cache.map.count{
+                    it.value == 0
+                }}"
+        }
     }
 
     log.info {
-        "Finished work session cacheFileStatusMapSize: ${cacheFileStatusMap.size}. Number of already existing: ${cacheFileStatusMap.values.count { it == FileStatus.SAME}}" +
+        "Finished work session cacheFileStatusMapSize: ${cacheFileStatusMap.size}. Number of already existing: " +
+            "${cacheFileStatusMap.values.count {
+                it == FileStatus.SAME
+            }}" +
             ", updated: ${cacheFileStatusMap.values.count { it == FileStatus.UPDATED }}" +
             ", new: ${cacheFileStatusMap.values.count { it == FileStatus.NEW }}" +
             ", not present (new tombstones): ${cacheFileStatusMap.values.count { it == FileStatus.NOT_PRESENT }}" +

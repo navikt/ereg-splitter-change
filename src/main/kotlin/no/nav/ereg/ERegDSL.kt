@@ -25,25 +25,25 @@ import java.lang.StringBuilder
 
 private val log = KotlinLogging.logger {}
 
-const val EV_eregUEUrl = "EREG_UEURL"
-const val EV_eregUEAccept = "EREG_UEACCEPT"
-const val EV_eregOEUrl = "EREG_OEURL"
-const val EV_eregOEAccept = "EREG_OEACCEPT"
+const val EV_EREG_UEURL = "EREG_UEURL"
+const val EV_EREG_UEACCEPT = "EREG_UEACCEPT"
+const val EV_EREG_OEURL = "EREG_OEURL"
+const val EV_EREG_OEACCEPT = "EREG_OEACCEPT"
 
-val eregUEUrl = getEnvOrDefault(EV_eregUEUrl, "")
-val eregUEAccept = getEnvOrDefault(EV_eregUEAccept, "")
-val eregOEUrl = getEnvOrDefault(EV_eregOEUrl, "")
-val eregOEAccept = getEnvOrDefault(EV_eregOEAccept, "")
+val eregUEUrl = getEnvOrDefault(EV_EREG_UEURL, "")
+val eregUEAccept = getEnvOrDefault(EV_EREG_UEACCEPT, "")
+val eregOEUrl = getEnvOrDefault(EV_EREG_OEURL, "")
+val eregOEAccept = getEnvOrDefault(EV_EREG_OEACCEPT, "")
 
 data class EREGEntity(
     val type: EREGEntityType,
     val url: String,
-    val acceptHeaderValue: String
+    val acceptHeaderValue: String,
 )
 
 enum class EREGEntityType {
     UNDERENHET,
-    ENHET
+    ENHET,
 }
 
 var cacheFileStatusMap: MutableMap<String, FileStatus> = mutableMapOf()
@@ -52,78 +52,95 @@ private fun EREGEntity.getRequest() = Request(Method.GET, this.url).header("Acce
 
 internal fun EREGEntity.getJsonAsSequenceIterator(
     cache: Map<String, Int>,
-    doConsume: (Iterator<KafkaPayload<ByteArray, ByteArray>>) -> Unit
-): Boolean = this.let { eregEntity ->
+    doConsume: (Iterator<KafkaPayload<ByteArray, ByteArray>>) -> Unit,
+): Boolean =
+    this.let { eregEntity ->
 
-    val responseTime = Metrics.responseLatency.labels(eregEntity.type.toString()).startTimer()
+        val responseTime = Metrics.responseLatency.labels(eregEntity.type.toString()).startTimer()
 
-    log.info { "${eregEntity.type}, request json data set as stream" }
+        log.info { "${eregEntity.type}, request json data set as stream" }
 
-    val okHttpClient = OkHttp(bodyMode = BodyMode.Stream)
+        val okHttpClient = OkHttp(bodyMode = BodyMode.Stream)
 
-    val resp = okHttpClient
-        .runCatching { invoke(eregEntity.getRequest()).also { responseTime.observeDuration() } }
-        .onSuccess { response ->
-            if (response.status.successful) {
-                Metrics.successfulRequest.labels(eregEntity.type.toString()).inc()
-                log.info { "${eregEntity.type}, successful response" }
+        val resp =
+            okHttpClient
+                .runCatching { invoke(eregEntity.getRequest()).also { responseTime.observeDuration() } }
+                .onSuccess { response ->
+                    if (response.status.successful) {
+                        Metrics.successfulRequest.labels(eregEntity.type.toString()).inc()
+                        log.info { "${eregEntity.type}, successful response" }
 
-                val streamAvailable = try {
-                    Pair(
-                        true,
-                        response
-                            .body
-                            .gunzipped().also {
-                                Metrics.receivedBytes.labels(eregEntity.type.toString()).observe(it.length?.toDouble() ?: 0.0)
-                                log.info { "${eregEntity.type}, unzipped size is ${it.length} bytes" }
+                        val streamAvailable =
+                            try {
+                                Pair(
+                                    true,
+                                    response
+                                        .body
+                                        .gunzipped()
+                                        .also {
+                                            Metrics.receivedBytes.labels(eregEntity.type.toString()).observe(it.length?.toDouble() ?: 0.0)
+                                            log.info { "${eregEntity.type}, unzipped size is ${it.length} bytes" }
+                                        }.stream,
+                                )
+                            } catch (e: Exception) {
+                                ServerState.state = ServerStates.EregIssues
+                                log.error { "${eregEntity.type}, failed when getting stream - ${e.message}" }
+                                Pair(false, ByteArrayInputStream("".toByteArray(Charsets.UTF_8)))
                             }
-                            .stream
-                    )
-                } catch (e: Exception) {
-                    ServerState.state = ServerStates.EregIssues
-                    log.error { "${eregEntity.type}, failed when getting stream - ${e.message}" }
-                    Pair(false, ByteArrayInputStream("".toByteArray(Charsets.UTF_8)))
-                }
-                if (streamAvailable.first)
-                    streamAvailable.second
-                        .use {
-                            doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
-                            log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
+                        if (streamAvailable.first) {
+                            streamAvailable.second
+                                .use {
+                                    doConsume(it.asFilteredSequence(eregEntity.type, cache).iterator())
+                                    log.info { "${eregEntity.type}, consumption completed, closing StreamInputReader" }
+                                }
                         }
-            } else {
-                Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
-                ServerState.state = ServerStates.EregIssues
-                log.error { "${eregEntity.type}, failed response - ${response.status.code}. Attemped request: ${eregEntity.getRequest()}" }
-            }
-        }.onFailure {
-            responseTime.observeDuration()
-            Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
-            ServerState.state = ServerStates.EregIssues
-            log.error { "${eregEntity.type}, failed when preparing for streaming - ${it.message}" }
-        }
-        .getOrDefault(Response(Status.EXPECTATION_FAILED).body(""))
+                    } else {
+                        Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
+                        ServerState.state = ServerStates.EregIssues
+                        log.error {
+                            "${eregEntity.type}, failed response - ${response.status.code}. Attemped request: ${eregEntity.getRequest()}"
+                        }
+                    }
+                }.onFailure {
+                    responseTime.observeDuration()
+                    Metrics.failedRequest.labels(eregEntity.type.toString()).inc()
+                    ServerState.state = ServerStates.EregIssues
+                    log.error { "${eregEntity.type}, failed when preparing for streaming - ${it.message}" }
+                }.getOrDefault(Response(Status.EXPECTATION_FAILED).body(""))
 
-    resp.status.successful // Not in use
-}
+        resp.status.successful // Not in use
+    }
 
-internal sealed class ObjectInCacheStatus(val name: String) {
+internal sealed class ObjectInCacheStatus(
+    val name: String,
+) {
     object New : ObjectInCacheStatus("NY")
+
     object Updated : ObjectInCacheStatus("ENDRET")
+
     object NoChange : ObjectInCacheStatus("UENDRET")
 }
 
 internal fun Map<String, Int>.exists(jsonOrgObject: JsonOrgObject): ObjectInCacheStatus =
-    if (!this.containsKey(jsonOrgObject.orgNo))
+    if (!this.containsKey(jsonOrgObject.orgNo)) {
         ObjectInCacheStatus.New
-    else if (this[jsonOrgObject.orgNo] != jsonOrgObject.hashCode)
+    } else if (this[jsonOrgObject.orgNo] != jsonOrgObject.hashCode) {
         ObjectInCacheStatus.Updated.also {
             if (examples > 0) {
                 examples--
-                log.info { "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this: ${if (this[jsonOrgObject.orgNo] == 0) "0 (TOMBSTONE)" else this[jsonOrgObject.orgNo].toString()} do not match ${if (jsonOrgObject.hashCode == 0) "0 (TOMBSTONE)" else jsonOrgObject.hashCode.toString()}" }
+                log.info {
+                    "EXAMPLE $examples. ORGNR: ${jsonOrgObject.orgNo} this: ${if (this[jsonOrgObject.orgNo] == 0) {
+                        "0 (TOMBSTONE)"
+                    } else {
+                        this[jsonOrgObject.orgNo]
+                            .toString()
+                    }} do not match ${if (jsonOrgObject.hashCode == 0) "0 (TOMBSTONE)" else jsonOrgObject.hashCode.toString()}"
+                }
             }
         }
-    else
+    } else {
         ObjectInCacheStatus.NoChange
+    }
 
 fun Int.toEvent(): String {
     if (this == 0) return "TOMBSTONE"
@@ -139,25 +156,31 @@ fun Int.toEvent(): String {
  */
 fun InputStream.asFilteredSequence(
     eregType: EREGEntityType,
-    cache: Map<String, Int>
-): Sequence<KafkaPayload<ByteArray, ByteArray>> = this.asJsonObjectSequence().filter { it.has("organisasjonsnummer") }.map {
-    JsonOrgObject(json = it.toString(), streamState = StreamState.STREAM_ONGOING, orgNo = it["organisasjonsnummer"].asString).addHashCode()
-}
-    .filter { jsonOrgObject ->
+    cache: Map<String, Int>,
+): Sequence<KafkaPayload<ByteArray, ByteArray>> =
+    this
+        .asJsonObjectSequence()
+        .filter { it.has("organisasjonsnummer") }
+        .map {
+            JsonOrgObject(
+                json = it.toString(),
+                streamState = StreamState.STREAM_ONGOING,
+                orgNo = it["organisasjonsnummer"].asString,
+            ).addHashCode()
+        }.filter { jsonOrgObject ->
 
-        val status = cache.exists(jsonOrgObject)
-        when (status) {
-            ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
-            ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
-            ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
+            val status = cache.exists(jsonOrgObject)
+            when (status) {
+                ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
+                ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
+                ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
+            }
+
+            Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
+            status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
+        }.map {
+            it.toKafkaPayload(eregType)
         }
-
-        Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
-        status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
-    }
-    .map {
-        it.toKafkaPayload(eregType)
-    }
 
 /** JsonOrgObject is just a string representation of a json object in a json array
  * @property streamState is the status of the stream and thus the content
@@ -172,56 +195,69 @@ internal data class JsonOrgObject(
     val streamState: StreamState,
     val json: String = "",
     val orgNo: String = "",
-    val hashCode: Int = 0
+    val hashCode: Int = 0,
 )
 
 internal fun JsonOrgObject.isOk() = this.streamState == StreamState.STREAM_ONGOING && this.orgNo.isNotEmpty()
 
-internal fun JsonOrgObject.addHashCode(): JsonOrgObject = this.json.hashCode().let { hashCode ->
-    JsonOrgObject(
-        this.streamState,
-        this.json,
-        this.orgNo,
-        hashCode
-    )
-}
+internal fun JsonOrgObject.addHashCode(): JsonOrgObject =
+    this.json.hashCode().let { hashCode ->
+        JsonOrgObject(
+            this.streamState,
+            this.json,
+            this.orgNo,
+            hashCode,
+        )
+    }
 
 internal fun JsonOrgObject.toKafkaPayload(eregType: EREGEntityType): KafkaPayload<ByteArray, ByteArray> =
     KafkaPayload(
-        key = EregOrganisationEventKey.newBuilder().let {
-            it.orgNumber = this.orgNo
-            it.orgType = when (eregType) {
-                EREGEntityType.ENHET -> EregOrganisationEventKey.OrgType.ENHET
-                EREGEntityType.UNDERENHET -> EregOrganisationEventKey.OrgType.UNDERENHET
-            }
-            it.build()
-        }.toByteArray(),
-        value = EregOrganisationEventValue.newBuilder().let {
-            it.orgAsJson = this.json
-            it.jsonHashCode = this.hashCode
-            it.build()
-        }.toByteArray()
+        key =
+            EregOrganisationEventKey
+                .newBuilder()
+                .let {
+                    it.orgNumber = this.orgNo
+                    it.orgType =
+                        when (eregType) {
+                            EREGEntityType.ENHET -> EregOrganisationEventKey.OrgType.ENHET
+                            EREGEntityType.UNDERENHET -> EregOrganisationEventKey.OrgType.UNDERENHET
+                        }
+                    it.build()
+                }.toByteArray(),
+        value =
+            EregOrganisationEventValue
+                .newBuilder()
+                .let {
+                    it.orgAsJson = this.json
+                    it.jsonHashCode = this.hashCode
+                    it.build()
+                }.toByteArray(),
     )
 
 internal fun orgNumberAsKey(orgNumber: String): ByteArray =
-    EregOrganisationEventKey.newBuilder().apply {
-        this.orgNumber = orgNumber
-        orgType = EregOrganisationEventKey.OrgType.ENHET
-    }.build().toByteArray()
+    EregOrganisationEventKey
+        .newBuilder()
+        .apply {
+            this.orgNumber = orgNumber
+            orgType = EregOrganisationEventKey.OrgType.ENHET
+        }.build()
+        .toByteArray()
 
-internal enum class StreamState(val value: Int) {
+internal enum class StreamState(
+    val value: Int,
+) {
     STREAM_EXCEPTION(-2),
     STREAM_ONGOING(0),
-    STREAM_FINISHED(-1) // according to InputStream.read()
+    STREAM_FINISHED(-1), // according to InputStream.read()
 }
 
 private fun InputStreamReader.safeRead(): Int =
-    this.runCatching { read() }
+    this
+        .runCatching { read() }
         .onFailure {
             ServerState.state = ServerStates.EregIssues
             log.error { "Stream reading error - ${it.message}" }
-        }
-        .getOrDefault(StreamState.STREAM_EXCEPTION.value)
+        }.getOrDefault(StreamState.STREAM_EXCEPTION.value)
 
 /**
  * captureOrgNo gets recursively the org. no from the current JsonOrgObject in stream
@@ -232,21 +268,23 @@ private fun InputStreamReader.safeRead(): Int =
  */
 internal tailrec fun InputStreamReader.captureOrgNo(
     org: StringBuilder,
-    orgNo: StringBuilder = StringBuilder()
-): Pair<StringBuilder, String> = when (val i = safeRead()) {
-
-    // Space
-    32 -> captureOrgNo(org.append(i.toChar()), orgNo)
-    // "
-    34 -> {
-        // the last " and completed orgNo
-        if (orgNo.isNotEmpty()) Pair(org.append(i.toChar()), orgNo.toString())
-        // the 1st "
-        else captureOrgNo(org.append(i.toChar()), orgNo)
+    orgNo: StringBuilder = StringBuilder(),
+): Pair<StringBuilder, String> =
+    when (val i = safeRead()) {
+        // Space
+        32 -> captureOrgNo(org.append(i.toChar()), orgNo)
+        // "
+        34 -> {
+            // the last " and completed orgNo
+            if (orgNo.isNotEmpty()) {
+                Pair(org.append(i.toChar()), orgNo.toString())
+            } else {
+                captureOrgNo(org.append(i.toChar()), orgNo)
+            }
+        }
+        // in between 1st and last "
+        else -> captureOrgNo(org.append(i.toChar()), orgNo.append(i.toChar()))
     }
-    // in between 1st and last "
-    else -> captureOrgNo(org.append(i.toChar()), orgNo.append(i.toChar()))
-}
 
 /**
  * captureJsonOrgObject captures recursively a JsonOrgObject from the json array in stream
@@ -263,65 +301,69 @@ internal tailrec fun InputStreamReader.captureOrgNo(
 internal tailrec fun InputStreamReader.captureJsonOrgObject(
     balanceCP: Int = 0,
     org: StringBuilder = StringBuilder(),
-    orgNo: String = ""
-): JsonOrgObject = when (val i = safeRead()) {
-
-    -1 -> {
-        log.info { "Stream completed successfully!" }
-        JsonOrgObject(StreamState.STREAM_FINISHED)
-    }
-    -2 -> {
-        log.warn { "Stream processing failure" }
-        JsonOrgObject(StreamState.STREAM_EXCEPTION)
-    }
-    // : for getting the org no directly from the stream
-    58 -> {
-        // Prerequisite - assuming org no as key-value at top level in json org object
-        val oNo1 = "\"organisasjonsnummer\""
-        val oNo2 = "\"organisasjonsnummer\" "
-        if (balanceCP == 1 && orgNo.isEmpty() && (org.endsWith(oNo1) || org.endsWith(oNo2))
-        ) {
-            val p = captureOrgNo(org.append(i.toChar()))
-            captureJsonOrgObject(balanceCP, p.first, p.second)
-        } else captureJsonOrgObject(balanceCP, org.append(i.toChar()), orgNo)
-    }
-    // { is either start of a json object in json array, or a sub object inside json object
-    123 -> captureJsonOrgObject(balanceCP + 1, org.append(i.toChar()), orgNo)
-    // }
-    125 ->
-        // the } completing the json object in json array
-        if (balanceCP - 1 == 0) {
-            val result = org.append(i.toChar()).toString()
-            JsonOrgObject(StreamState.STREAM_ONGOING, result, orgNo).addHashCode()
+    orgNo: String = "",
+): JsonOrgObject =
+    when (val i = safeRead()) {
+        -1 -> {
+            log.info { "Stream completed successfully!" }
+            JsonOrgObject(StreamState.STREAM_FINISHED)
         }
-        // otherwise, just continue in the not completed json object
-        else captureJsonOrgObject(balanceCP - 1, org.append(i.toChar()), orgNo)
-    else ->
-        // capture data when being inside json object
-        if (balanceCP >= 1) captureJsonOrgObject(balanceCP, org.append(i.toChar()), orgNo)
-        // skip data outside json object, e.g. [ ]
-        else captureJsonOrgObject(balanceCP, org, orgNo)
-}
+        -2 -> {
+            log.warn { "Stream processing failure" }
+            JsonOrgObject(StreamState.STREAM_EXCEPTION)
+        }
+        // : for getting the org no directly from the stream
+        58 -> {
+            // Prerequisite - assuming org no as key-value at top level in json org object
+            val oNo1 = "\"organisasjonsnummer\""
+            val oNo2 = "\"organisasjonsnummer\" "
+            if (balanceCP == 1 && orgNo.isEmpty() && (org.endsWith(oNo1) || org.endsWith(oNo2))) {
+                val p = captureOrgNo(org.append(i.toChar()))
+                captureJsonOrgObject(balanceCP, p.first, p.second)
+            } else {
+                captureJsonOrgObject(balanceCP, org.append(i.toChar()), orgNo)
+            }
+        }
+        // { is either start of a json object in json array, or a sub object inside json object
+        123 -> captureJsonOrgObject(balanceCP + 1, org.append(i.toChar()), orgNo)
+        // }
+        125 ->
+            // the } completing the json object in json array
+            if (balanceCP - 1 == 0) {
+                val result = org.append(i.toChar()).toString()
+                JsonOrgObject(StreamState.STREAM_ONGOING, result, orgNo).addHashCode()
+            } else { // otherwise, just continue in the not completed json object
+                captureJsonOrgObject(balanceCP - 1, org.append(i.toChar()), orgNo)
+            }
+        else ->
+            // capture data when being inside json object
+            if (balanceCP >= 1) {
+                captureJsonOrgObject(balanceCP, org.append(i.toChar()), orgNo)
+            } else {
+                captureJsonOrgObject(balanceCP, org, orgNo)
+            }
+    }
 
 // This function parses a JSON array stream and returns a Sequence of JsonObjects.
-fun InputStream.asJsonObjectSequence(): Sequence<JsonObject> = sequence {
-    val reader = JsonReader(InputStreamReader(this@asJsonObjectSequence))
+fun InputStream.asJsonObjectSequence(): Sequence<JsonObject> =
+    sequence {
+        val reader = JsonReader(InputStreamReader(this@asJsonObjectSequence))
 
-    try {
-        reader.beginArray() // Start of the JSON array
-        while (reader.hasNext()) {
-            // Read the next JSON object in the array
-            val jsonObject = reader.readJsonObject()
-            yield(jsonObject) // Yield the object into the sequence
+        try {
+            reader.beginArray() // Start of the JSON array
+            while (reader.hasNext()) {
+                // Read the next JSON object in the array
+                val jsonObject = reader.readJsonObject()
+                yield(jsonObject) // Yield the object into the sequence
+            }
+            reader.endArray() // End of the JSON array
+        } catch (e: IOException) {
+            // Handle any IO errors (e.g., file reading errors)
+            println("Error reading JSON stream: ${e.message}")
+        } finally {
+            reader.close() // Close the reader to release resources
         }
-        reader.endArray() // End of the JSON array
-    } catch (e: IOException) {
-        // Handle any IO errors (e.g., file reading errors)
-        println("Error reading JSON stream: ${e.message}")
-    } finally {
-        reader.close() // Close the reader to release resources
     }
-}
 
 // Extension function to read a single JsonObject from the stream
 private fun JsonReader.readJsonObject(): JsonObject {
@@ -337,8 +379,8 @@ private fun JsonReader.readJsonObject(): JsonObject {
 }
 
 // Helper function to read the next value depending on the token type
-private fun JsonReader.nextValue(): JsonElement {
-    return when (this.peek()) {
+private fun JsonReader.nextValue(): JsonElement =
+    when (this.peek()) {
         JsonToken.BEGIN_OBJECT -> this.readJsonObject()
         JsonToken.BEGIN_ARRAY -> this.readJsonArray()
         JsonToken.STRING -> JsonPrimitive(this.nextString())
@@ -347,7 +389,6 @@ private fun JsonReader.nextValue(): JsonElement {
         JsonToken.NULL -> JsonNull.INSTANCE
         else -> throw IllegalStateException("Unexpected token: ${this.peek()}")
     }
-}
 
 // Extension function to handle reading an array when necessary
 private fun JsonReader.readJsonArray(): JsonElement {

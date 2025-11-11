@@ -9,48 +9,54 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 private val log = KotlinLogging.logger {}
 
-fun getEnvOrDefault(env: String, defaultValue: String): String = System.getenv(env) ?: defaultValue
+fun getEnvOrDefault(
+    env: String,
+    defaultValue: String,
+): String = System.getenv(env) ?: defaultValue
 
-internal fun ByteArray.protobufSafeParseKey(): EregOrganisationEventKey = this.let { ba ->
-    try {
-        EregOrganisationEventKey.parseFrom(ba)
-    } catch (e: InvalidProtocolBufferException) {
-        ServerState.state = ServerStates.ProtobufIssues
-        log.error { "Failure when parsing protobuf for kafka key - ${e.message}" }
-        EregOrganisationEventKey.getDefaultInstance()
+internal fun ByteArray.protobufSafeParseKey(): EregOrganisationEventKey =
+    this.let { ba ->
+        try {
+            EregOrganisationEventKey.parseFrom(ba)
+        } catch (e: InvalidProtocolBufferException) {
+            ServerState.state = ServerStates.ProtobufIssues
+            log.error { "Failure when parsing protobuf for kafka key - ${e.message}" }
+            EregOrganisationEventKey.getDefaultInstance()
+        }
     }
-}
 
-internal fun ByteArray.protobufSafeParseValue(): EregOrganisationEventValue = this.let { ba ->
-    try {
-        EregOrganisationEventValue.parseFrom(ba)
-    } catch (e: InvalidProtocolBufferException) {
-        ServerState.state = ServerStates.ProtobufIssues
-        log.error { "Failure when parsing protobuf for kafka value - ${e.message}" }
-        EregOrganisationEventValue.getDefaultInstance()
+internal fun ByteArray.protobufSafeParseValue(): EregOrganisationEventValue =
+    this.let { ba ->
+        try {
+            EregOrganisationEventValue.parseFrom(ba)
+        } catch (e: InvalidProtocolBufferException) {
+            ServerState.state = ServerStates.ProtobufIssues
+            log.error { "Failure when parsing protobuf for kafka value - ${e.message}" }
+            EregOrganisationEventValue.getDefaultInstance()
+        }
     }
-}
 
-internal fun <K, V> KafkaProducer<K, V>.send(topic: String, key: K, value: V): Boolean = this.runCatching {
-    send(ProducerRecord(topic, key, value)).get().hasOffset()
-}
-    .onFailure {
-        ServerState.state = ServerStates.KafkaIssues
-        log.error { "KafkaProducer failure when sending data to kafka - ${it.message}" }
-    }
-    .getOrDefault(false)
+internal fun <K, V> KafkaProducer<K, V>.send(
+    topic: String,
+    key: K,
+    value: V,
+): Boolean =
+    this
+        .runCatching {
+            send(ProducerRecord(topic, key, value)).get().hasOffset()
+        }.onFailure {
+            ServerState.state = ServerStates.KafkaIssues
+            log.error { "KafkaProducer failure when sending data to kafka - ${it.message}" }
+        }.getOrDefault(false)
 
 /**
  * KafkaPayload is a simple key-value to be sent to Kafka
  */
-data class KafkaPayload<K, V> (
+data class KafkaPayload<K, V>(
     val key: K,
-    val value: V
+    val value: V,
 )
 
-/**
- * publishIterator - iterate and send each element to kafka, unless an something occur
- */
 /*internal tailrec fun <K, V> KafkaProducer<K, V>.publishIterator(
     iter: Iterator<KafkaPayload<K, V>>,
     topic: String,
@@ -71,7 +77,7 @@ data class KafkaPayload<K, V> (
 
 fun <K, V> KafkaProducer<K, V>.publishIterator(
     iter: Iterator<KafkaPayload<K, V>>,
-    topic: String
+    topic: String,
 ): Int {
     var sendIsOk = true
     var noOfEvents = 0

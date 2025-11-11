@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 import com.google.gson.GsonBuilder
 import mu.KotlinLogging
 import no.nav.ereg.EREGEntityType
@@ -30,8 +32,9 @@ class ParsingTest {
     val gsonPretty = GsonBuilder().setPrettyPrinting().create()
 
     fun getFileAsByteArrayInputStream(filename: String): ByteArrayInputStream {
-        val resource = this::class.java.classLoader.getResourceAsStream(filename)
-            ?: throw IllegalArgumentException("File not found: $filename")
+        val resource =
+            this::class.java.classLoader.getResourceAsStream(filename)
+                ?: throw IllegalArgumentException("File not found: $filename")
         return ByteArrayInputStream(resource.readAllBytes())
     }
 
@@ -43,48 +46,57 @@ class ParsingTest {
         // Create a mocked Response with the gzipped content as the stream
         val response = Response(Status.OK).body(gzippedFileStream, gzippedFileStream.available().toLong())
 
-        val streamAvailable = try {
-            Pair(
-                true,
-                response
-                    .body.also { log.info { "bodyfeteched" } }
-                    .gunzipped().also {
-                        log.info { "Testing Enhet, unzipped size is ${it.length} bytes" }
-                    }
-                    .stream.also { log.info { "streamified" } }
-            )
-        } catch (e: Exception) {
-            ServerState.state = ServerStates.EregIssues
-            log.error { "Testing enhet, failed when getting stream - ${e.message}" }
-            Pair(false, ByteArrayInputStream("".toByteArray(Charsets.UTF_8)))
-        }
+        val streamAvailable =
+            try {
+                Pair(
+                    true,
+                    response
+                        .body
+                        .also { log.info { "bodyfeteched" } }
+                        .gunzipped()
+                        .also {
+                            log.info { "Testing Enhet, unzipped size is ${it.length} bytes" }
+                        }.stream
+                        .also { log.info { "streamified" } },
+                )
+            } catch (e: Exception) {
+                ServerState.state = ServerStates.EregIssues
+                log.error { "Testing enhet, failed when getting stream - ${e.message}" }
+                Pair(false, ByteArrayInputStream("".toByteArray(Charsets.UTF_8)))
+            }
 
         fun InputStream.asFilteredSequence(
             eregType: EREGEntityType,
-            cache: Map<String, Int>
-        ): Sequence<KafkaPayload<ByteArray, ByteArray>> = this.asJsonObjectSequence().filter { it.has("organisasjonsnummer") }.map {
-            JsonOrgObject(json = it.toString(), streamState = StreamState.STREAM_ONGOING, orgNo = it["organisasjonsnummer"].asString).addHashCode()
-        }
-            .filter { jsonOrgObject ->
+            cache: Map<String, Int>,
+        ): Sequence<KafkaPayload<ByteArray, ByteArray>> =
+            this
+                .asJsonObjectSequence()
+                .filter { it.has("organisasjonsnummer") }
+                .map {
+                    JsonOrgObject(
+                        json = it.toString(),
+                        streamState = StreamState.STREAM_ONGOING,
+                        orgNo = it["organisasjonsnummer"].asString,
+                    ).addHashCode()
+                }.filter { jsonOrgObject ->
 
-                val status = cache.exists(jsonOrgObject)
-                when (status) {
-                    ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
-                    ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
-                    ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
+                    val status = cache.exists(jsonOrgObject)
+                    when (status) {
+                        ObjectInCacheStatus.New -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.NEW
+                        ObjectInCacheStatus.Updated -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.UPDATED
+                        ObjectInCacheStatus.NoChange -> cacheFileStatusMap[jsonOrgObject.orgNo] = FileStatus.SAME
+                    }
+
+                    Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
+                    status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
+                }.map {
+                    println("object from stream: \n" + gsonPretty.toJson(it))
+                    it.toKafkaPayload(eregType)
                 }
-
-                Metrics.publishedOrgs.labels(eregType.toString(), status.name).inc()
-                status in listOf(ObjectInCacheStatus.New, ObjectInCacheStatus.Updated)
-            }
-            .map {
-                println("object from stream: \n" + gsonPretty.toJson(it))
-                it.toKafkaPayload(eregType)
-            }
 
         fun publishIterator(
             iter: Iterator<KafkaPayload<ByteArray, ByteArray>>,
-            topic: String
+            topic: String,
         ): Int {
             var sendIsOk = true
             var noOfEvents = 0
@@ -128,7 +140,6 @@ class ParsingTest {
         }
 
         if (streamAvailable.first) {
-
             log.info { "Should star working" }
             streamAvailable.second
                 .use {
