@@ -1,6 +1,10 @@
 name: Build, push, and deploy
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - 'chore/**'
+  pull_request:
 
 jobs:
   test:
