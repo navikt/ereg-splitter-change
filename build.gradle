@@ -41,7 +41,7 @@ dependencies {
     implementation "org.http4k:http4k-server-netty:6.39.0.0"
     implementation "org.http4k:http4k-client-okhttp:6.39.0.0"
 
-    implementation "org.apache.kafka:kafka-clients:3.9.1"
+    implementation "org.apache.kafka:kafka-clients:3.9.2"
 
     implementation "io.grpc:grpc-protobuf:1.69.0"
     implementation "io.grpc:grpc-stub:1.69.0"
