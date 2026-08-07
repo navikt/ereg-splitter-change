@@ -17,7 +17,6 @@ import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.filter.gunzipped
-import org.http4k.filter.gunzippedStream
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -75,9 +74,13 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
                             try {
                                 Pair(
                                     true,
-                                    response.body.gunzippedStream(
-                                        maxSize = 100L * 1024 * 1024,
-                                    ),
+                                    response
+                                        .body
+                                        .gunzipped()
+                                        .also {
+                                            Metrics.receivedBytes.labels(eregEntity.type.toString()).observe(it.length?.toDouble() ?: 0.0)
+                                            log.info { "${eregEntity.type}, unzipped size is ${it.length} bytes" }
+                                        }.stream,
                                 )
                             } catch (e: Exception) {
                                 ServerState.state = ServerStates.EregIssues
