@@ -16,12 +16,12 @@ import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.filter.gunzipped
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.StringBuilder
+import java.util.zip.GZIPInputStream
 
 private val log = KotlinLogging.logger {}
 
@@ -72,16 +72,18 @@ internal fun EREGEntity.getJsonAsSequenceIterator(
 
                         val streamAvailable =
                             try {
-                                Pair(
-                                    true,
-                                    response
-                                        .body
-                                        .gunzipped()
-                                        .also {
-                                            Metrics.receivedBytes.labels(eregEntity.type.toString()).observe(it.length?.toDouble() ?: 0.0)
-                                            log.info { "${eregEntity.type}, unzipped size is ${it.length} bytes" }
-                                        }.stream,
-                                )
+                                val rawStream = response.body.stream
+                                val isGzipped =
+                                    response.header("Content-Encoding")?.contains("gzip", ignoreCase = true) == true
+                                val decodedStream: InputStream =
+                                    if (isGzipped) GZIPInputStream(rawStream) else rawStream
+                                response.body.length?.let {
+                                    Metrics.receivedBytes.labels(eregEntity.type.toString()).observe(it.toDouble())
+                                }
+                                log.info {
+                                    "${eregEntity.type}, streaming response (compressed size ${response.body.length} bytes, gzipped=$isGzipped)"
+                                }
+                                Pair(true, decodedStream)
                             } catch (e: Exception) {
                                 ServerState.state = ServerStates.EregIssues
                                 log.error { "${eregEntity.type}, failed when getting stream - ${e.message}" }
